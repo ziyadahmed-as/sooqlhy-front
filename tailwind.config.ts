@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss';
-import defaultTheme from 'tailwindcss/defaultTheme';
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './app/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
@@ -11,19 +11,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: '#0B1F3A', // primary
-        gold: '#F4A92A', // accent
-        trust: '#1A5FA8', // secondary
-        teal: '#0F6E56', // success
-        coral: '#E05A2B', // danger
-        surface: '#F8F6F2', // background
-      },
-      fontFamily: {
-        sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
+        navy: '#0B1F3A',   // primary
+        gold: '#F4A92A',   // accent
+        trust: '#1A5FA8',  // secondary
+        teal: '#0F6E56',   // success
+        coral: '#E05A2B',  // danger
+        surface: '#F8F6F2',// background
       },
     },
   },
-  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography')],
-};
+  plugins: [],
+} as const;
 
 export default config;
