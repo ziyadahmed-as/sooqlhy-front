@@ -1,8 +1,8 @@
-// stores/auth-store.ts
-import create from 'zustand';
-import { persist } from 'zustand/middleware';
-import axiosInstance from '@/lib/api/axios';
-import { User, Role } from '@/lib/types';
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import api from '@/lib/api/axios';
+import { User } from '@/lib/types';
+import Cookies from 'js-cookie';
 
 type AuthState = {
   user: User | null;
@@ -11,7 +11,20 @@ type AuthState = {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (data: {
+    email: string;
+    username: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    phone_number: string;
+    store_name?: string;
+    vehicle_type?: string;
+    license_number?: string;
+  }) => Promise<void>;
   logout: () => void;
+  clearAuth: () => void;
   setUser: (user: User | null) => void;
   setTokens: (accessToken: string | null, refreshToken: string | null) => void;
 };
@@ -24,30 +37,61 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       loading: false,
       error: null,
-      async login(email, password) {
+      async login(email: string, password: string) {
         set({ loading: true, error: null });
         try {
-          const response = await axiosInstance.post('/api/auth/login/', { email, password });
+          const response = await api.post('/api/auth/login/', { email, password });
           const { access, refresh, user } = response.data;
           set({ accessToken: access, refreshToken: refresh, user, loading: false });
+          Cookies.set('refreshToken', refresh, { secure: true, sameSite: 'strict' });
         } catch (err: any) {
           set({ error: err?.response?.data?.detail || 'Login failed', loading: false });
         }
       },
-      logout() {
-        // clear cookies & store
-        set({ user: null, accessToken: null, refreshToken: null, loading: false, error: null });
+      async register(data: {
+        email: string;
+        username: string;
+        password: string;
+        first_name: string;
+        last_name: string;
+        role: string;
+        phone_number: string;
+        store_name?: string;
+        vehicle_type?: string;
+        license_number?: string;
+      }) {
+        set({ loading: true, error: null });
+        try {
+          await api.post('/api/users/register/', data);
+          set({ loading: false });
+        } catch (err: any) {
+          const errMsg = err?.response?.data;
+          // Flatten error object for better display if it's an object
+          const detail = typeof errMsg === 'object' && errMsg !== null 
+            ? Object.values(errMsg).flat().join(', ') 
+            : 'Registration failed';
+          set({ error: detail || 'Registration failed', loading: false });
+          throw err;
+        }
       },
-      setUser(user) {
+      logout() {
+        set({ user: null, accessToken: null, refreshToken: null, loading: false, error: null });
+        Cookies.remove('refreshToken');
+      },
+      clearAuth() {
+        set({ user: null, accessToken: null, refreshToken: null, loading: false, error: null });
+        Cookies.remove('refreshToken');
+      },
+      setUser(user: User | null) {
         set({ user });
       },
-      setTokens(accessToken, refreshToken) {
+      setTokens(accessToken: string | null, refreshToken: string | null) {
         set({ accessToken, refreshToken });
       },
     }),
     {
-      name: 'auth-storage', // key in storage
-      getStorage: () => localStorage,
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

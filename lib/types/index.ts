@@ -35,12 +35,16 @@ export interface User {
 }
 
 /** Cart item definition */
-export interface CartItem {
-  productId: string;
+export interface Product {
+  id: string;
   name: string;
   price: number;
-  quantity: number;
   imageUrl?: string;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
 }
 
 /** Toast notification type */

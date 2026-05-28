@@ -1,6 +1,6 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
-import { getAuthStore } from '../stores/auth-store';
+import { useAuthStore } from '@/stores/auth-store';
 
 /**
  * Base API URL – should be set via NEXT_PUBLIC_API_URL in .env.local
@@ -20,10 +20,10 @@ const api: AxiosInstance = axios.create({
 /**
  * Request interceptor – inject Authorization header from auth store.
  */
-api.interceptors.request.use((config: AxiosRequestConfig) => {
-  const { accessToken } = getAuthStore.getState();
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const { accessToken } = useAuthStore.getState();
   if (accessToken) {
-    config.headers = config.headers ?? {};
+    config.headers = config.headers ?? {} as any;
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
@@ -40,7 +40,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const { refreshToken } = getAuthStore.getState();
+        const { refreshToken } = useAuthStore.getState();
         if (!refreshToken) throw new Error('No refresh token');
         const refreshResponse = await axios.post(
           `${BASE_URL}/api/token/refresh/`,
@@ -49,13 +49,13 @@ api.interceptors.response.use(
         );
         const newAccess = refreshResponse.data.access;
         // Update store
-        getAuthStore.getState().setTokens({ accessToken: newAccess, refreshToken });
+        useAuthStore.getState().setTokens(newAccess, refreshToken);
         // Set new header and retry original request
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed – clear auth and redirect to login (handled by middleware on next request)
-        getAuthStore.getState().clearAuth();
+        useAuthStore.getState().clearAuth();
         return Promise.reject(refreshError);
       }
     }

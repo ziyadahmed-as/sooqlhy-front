@@ -29,7 +29,7 @@ export const Navbar = () => {
       </div>
       <div className="flex items-center space-x-2">
         {user && (
-          <span className="mr-2">{user.full_name || user.email}</span>
+          <span className="mr-2">{user.name || user.email}</span>
         )}
         <Button variant="outline" onClick={logout} size="sm">
           Logout

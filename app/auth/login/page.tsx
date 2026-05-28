@@ -1,0 +1,155 @@
+// app/auth/login/page.tsx
+"use client";
+
+import React, { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth-store";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
+import { motion } from "framer-motion";
+import Link from "next/link";
+
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
+
+const schema = z.object({
+  email: z.string().email({ message: "Invalid email" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+});
+
+type Schema = z.infer<typeof schema>;
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { login, accessToken, error, loading, setUser } = useAuthStore();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<Schema>({ resolver: zodResolver(schema) });
+
+  const onSubmit = async (data: LoginFormValues) => {
+    await login(data.email, data.password);
+  };
+
+  useEffect(() => {
+    const fetchUserAndRedirect = async () => {
+      if (!accessToken) return;
+      try {
+        const res = await axios.get("/api/users/users/me/");
+        const role = res.data.role as string;
+        setUser(res.data);
+        switch (role) {
+          case "BUYER": router.push("/buyer/catalog"); break;
+          case "VENDOR": router.push("/vendor/dashboard"); break;
+          case "DRIVER": router.push("/driver/deliveries"); break;
+          case "MODERATOR": router.push("/moderator/kyc-review"); break;
+          case "ADMIN": router.push("/admin/dashboard"); break;
+          default: router.push("/");
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchUserAndRedirect();
+  }, [accessToken, router, setUser]);
+
+  return (
+    <div className="flex min-h-screen bg-[#f8f6f2] font-sans">
+      {/* Left side: Premium Image/Branding */}
+      <div className="hidden lg:flex w-1/2 bg-[#0B1F3A] flex-col justify-center items-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          {/* Abstract pattern or premium gradient */}
+          <div className="absolute top-0 left-0 w-96 h-96 bg-[#f4a92a] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#0f6e56] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-[#1a5fa8] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative z-10 text-center text-white px-12"
+        >
+          <h1 className="text-5xl font-bold mb-6 tracking-tight">Welcome to Sooqly</h1>
+          <p className="text-xl text-gray-300 max-w-md mx-auto leading-relaxed">
+            The next-generation multi-vendor e-commerce platform designed for premium shopping experiences.
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Right side: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="w-full max-w-md"
+        >
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-[#0B1F3A] mb-2">Sign in to your account</h2>
+            <p className="text-gray-500">Enter your email and password to access the platform</p>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[#0B1F3A]">Email address</label>
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-sm text-[#e05a2b] mt-1">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-[#0B1F3A]">Password</label>
+                <Link href="/auth/forgot-password" className="text-sm text-[#1a5fa8] hover:text-[#0B1F3A] transition-colors font-medium">
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                {...register("password")}
+              />
+              {errors.password && (
+                <p className="text-sm text-[#e05a2b] mt-1">{errors.password.message}</p>
+              )}
+            </div>
+
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-3 bg-[#e05a2b]/10 border border-[#e05a2b]/20 rounded-xl text-sm text-[#e05a2b] flex items-center"
+              >
+                <span className="mr-2">⚠️</span> {error}
+              </motion.div>
+            )}
+
+            <Button type="submit" variant="primary" disabled={loading} className="w-full h-12 text-lg">
+              {loading ? "Signing in..." : "Sign In"}
+            </Button>
+            
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Don't have an account?{' '}
+              <Link href="/auth/register" className="font-semibold text-[#1a5fa8] hover:text-[#0B1F3A] transition-colors">
+                Sign up
+              </Link>
+            </p>
+          </form>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
