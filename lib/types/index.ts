@@ -32,6 +32,8 @@ export interface User {
   email: string;
   name?: string;
   role: UserRole;
+  /** Indicates whether the user's KYC verification is complete */
+  is_verified: boolean;
 }
 
 /** Cart item definition */

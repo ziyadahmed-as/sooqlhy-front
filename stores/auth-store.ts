@@ -23,7 +23,8 @@ type AuthState = {
     vehicle_type?: string;
     license_number?: string;
   }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  changePassword: (old_password: string, new_password: string) => Promise<void>;
   clearAuth: () => void;
   setUser: (user: User | null) => void;
   setTokens: (accessToken: string | null, refreshToken: string | null) => void;
@@ -74,9 +75,29 @@ export const useAuthStore = create<AuthState>()(
           throw err;
         }
       },
-      logout() {
-        set({ user: null, accessToken: null, refreshToken: null, loading: false, error: null });
-        Cookies.remove('refreshToken');
+      async logout() {
+        const { refreshToken } = get();
+        try {
+          if (refreshToken) {
+            await api.post('/api/auth/logout/', { refresh: refreshToken });
+          }
+        } catch {
+          // Even if blacklist fails, clear local state
+        } finally {
+          set({ user: null, accessToken: null, refreshToken: null, loading: false, error: null });
+          Cookies.remove('refreshToken');
+        }
+      },
+      async changePassword(old_password: string, new_password: string) {
+        set({ loading: true, error: null });
+        try {
+          await api.post('/api/auth/password-change/', { old_password, new_password });
+          set({ loading: false });
+        } catch (err: any) {
+          const detail = err?.response?.data?.old_password?.[0] || err?.response?.data?.detail || 'Password change failed';
+          set({ error: detail, loading: false });
+          throw err;
+        }
       },
       clearAuth() {
         set({ user: null, accessToken: null, refreshToken: null, loading: false, error: null });
