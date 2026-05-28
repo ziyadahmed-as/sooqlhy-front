@@ -3,7 +3,7 @@ import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { clsx } from 'clsx';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+export type ButtonVariant = 'primary' | 'accent' | 'outline';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -16,9 +16,8 @@ const baseClasses = 'inline-flex items-center justify-center rounded-md font-med
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'bg-navy text-white hover:bg-navy/90',
-  secondary: 'bg-trust text-white hover:bg-trust/90',
-  danger: 'bg-coral text-white hover:bg-coral/90',
-  ghost: 'bg-transparent border border-surface text-surface hover:bg-surface/20',
+  accent: 'bg-gold text-white hover:bg-gold/90',
+  outline: 'bg-transparent border border-surface text-surface hover:bg-surface/20',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

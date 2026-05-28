@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '@/lib/utils'; // utility for clsx + tailwind-merge
+import { cn } from '../../lib/utils'; // utility for clsx + tailwind-merge
 import { twMerge } from 'tailwind-merge';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
