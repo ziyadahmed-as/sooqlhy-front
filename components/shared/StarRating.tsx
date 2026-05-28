@@ -1,4 +1,4 @@
-import { useState } from 'react';
+"use client";
 import styles from '@/styles/components.module.css';
 
 type Props = {

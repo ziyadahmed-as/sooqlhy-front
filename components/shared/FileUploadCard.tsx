@@ -4,10 +4,12 @@ import { z } from 'zod';
 /**
  * Props for a single KYC document requirement.
  */
-// The requirement shape is defined centrally in lib/types/kyc.ts
-import { KycRequirement } from '@/lib/types/kyc';
-// Alias for backward compatibility within this component
-type Requirement = KycRequirement;
+interface Requirement {
+  code: string; // e.g. "ID", "LIVE_PHOTO"
+  name: string;
+  description: string;
+  type: string; // "image" | "pdf" | "live_photo" (treated as image with extra validation)
+}
 
 /**
  * Data emitted from the component after successful validation.
@@ -112,7 +114,7 @@ export const FileUploadCard: React.FC<Props> = ({ requirement, onSubmit, initial
     };
     const result = uploadSchema.safeParse(payload);
     if (!result.success) {
-      setError(result.error.errors[0]?.message ?? 'Invalid input');
+      setError(result.error.message);
       return;
     }
     setLoading(true);

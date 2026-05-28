@@ -1,0 +1,26 @@
+/* src/app/styles/vendor.module.css */
+/* Vendor Dashboard styles */
+.dashboard {
+  padding: 2rem;
+  background: var(--bg-color, #f5f5f5);
+}
+.metricScroller {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+.chartContainer {
+  margin-top: 2rem;
+}
+.lowStockSection {
+  margin-top: 2rem;
+}
+.productsSection {
+  margin-top: 2rem;
+}
+.quickActions {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+}
