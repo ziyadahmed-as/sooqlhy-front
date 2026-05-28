@@ -1,57 +1,53 @@
-/* lib/types/index.ts */
-
-/**
- * Common type definitions used across the Sooqly frontend.
+/*
+ * lib/types/index.ts
+ * Central TypeScript type definitions for the Sooqly frontend.
  */
 
-export type Role = 'buyer' | 'vendor' | 'driver' | 'moderator' | 'admin';
+/** User role enumeration */
+export type UserRole =
+  | "buyer"
+  | "vendor"
+  | "driver"
+  | "moderator"
+  | "admin";
 
-/**
- * JWT payload shape expected from the authentication server.
- * Must contain the user role and optionally other user info.
- */
+/** JWT payload shape (decoded) */
 export interface JwtPayload {
   sub: string; // user id
-  email?: string;
-  role: Role;
-  iat?: number;
-  exp?: number;
+  email: string;
+  role: UserRole;
+  iat: number;
+  exp: number;
 }
 
-/**
- * Basic user information stored in the auth store.
- */
+/** Authentication tokens */
+export interface AuthTokens {
+  access: string;
+  refresh: string;
+}
+
+/** User object stored in the auth store */
 export interface User {
   id: string;
   email: string;
   name?: string;
-  role: Role;
+  role: UserRole;
 }
 
-/**
- * Product representation (simplified for the demo).
- */
-export interface Product {
-  id: string;
+/** Cart item definition */
+export interface CartItem {
+  productId: string;
   name: string;
-  description?: string;
-  price: number; // in cents or smallest currency unit
+  price: number;
+  quantity: number;
   imageUrl?: string;
 }
 
-/**
- * Item stored in the shopping cart.
- */
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
-
-/**
- * Generic API response wrapper.
- */
-export interface ApiResponse<T = any> {
-  data: T;
-  success: boolean;
-  message?: string;
+/** Toast notification type */
+export type ToastVariant = "success" | "error" | "info";
+export interface ToastMessage {
+  id: string;
+  title: string;
+  description?: string;
+  variant: ToastVariant;
 }
