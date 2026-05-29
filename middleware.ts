@@ -39,15 +39,19 @@ import { jwtDecode } from 'jwt-decode';
    const { pathname } = request.nextUrl;
 
    // Public routes – auth pages and Next.js static assets
-   const publicRoutes = [
-     /^\/auth\/login(\/|$)/,
-     /^\/auth\/register(\/|$)/,
-     /^\/auth\/forgot-password(\/|$)/,
-     /^\/auth\/reset-password(\/|$)/,
-     /^\/api\/.*$/,
-     /^\/static\/.*$/,
-     /^\/\_next\/.*$/,
-   ];
+    const publicRoutes = [
+      /^\/$/,
+      /^\/home(\/|$)/,
+      /^\/buyer\/catalog(\/|$)/,
+      /^\/products\/.*$/,
+      /^\/auth\/login(\/|$)/,
+      /^\/auth\/register(\/|$)/,
+      /^\/auth\/forgot-password(\/|$)/,
+      /^\/auth\/reset-password(\/|$)/,
+      /^\/api\/.*$/,
+      /^\/static\/.*$/,
+      /^\/\_next\/.*$/,
+    ];
 
    if (publicRoutes.some((r) => r.test(pathname))) {
      return NextResponse.next();

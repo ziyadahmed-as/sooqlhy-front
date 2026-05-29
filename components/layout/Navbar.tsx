@@ -54,13 +54,19 @@ export const Navbar = () => {
         )}
       </div>
       <div className="flex items-center space-x-2">
-        {user && (
+        {user ? (
           <>
             <span className="mr-2">{user.name || user.email}</span>
             <Button variant="outline" onClick={logout} size="sm">
               Logout
             </Button>
           </>
+        ) : (
+          <Link href="/auth/login">
+            <Button variant="outline" size="sm">
+              Login
+            </Button>
+          </Link>
         )}
       </div>
     </nav>
