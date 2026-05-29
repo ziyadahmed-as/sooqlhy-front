@@ -1,0 +1,68 @@
+/* app/register/register.module.css */
+
+/* Container with gradient background */
+.registerContainer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, hsl(210, 30%, 12%), hsl(260, 30%, 15%));
+  color: #f0f0f0;
+  padding: 2rem;
+}
+
+.header {
+  font-family: 'Inter', sans-serif;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.cardsWrapper {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.dropZone {
+  width: 100%;
+  max-width: 600px;
+  min-height: 180px;
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cfcfcf;
+  font-size: 1.2rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.dropZone.dragover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: hsl(190, 80%, 60%);
+}
+
+.selectedRole {
+  margin-top: 1rem;
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: hsl(190, 70%, 70%);
+}
+
+.formPlaceholder {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  color: #e0e0e0;
+}

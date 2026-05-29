@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
       async changePassword(old_password: string, new_password: string) {
         set({ loading: true, error: null });
         try {
-          await api.post('/api/auth/password-change/', { old_password, new_password });
+          await api.post('/api/users/change-password/', { old_password, new_password });
           set({ loading: false });
         } catch (err: any) {
           const detail = err?.response?.data?.old_password?.[0] || err?.response?.data?.detail || 'Password change failed';

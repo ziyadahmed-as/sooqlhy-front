@@ -42,6 +42,11 @@ export interface Product {
   avg_rating: number; // average rating 0-5
   vendor: Vendor;
 }
+// Category definition for product filtering
+export interface Category {
+  id: string;
+  name: string;
+}
 
 /** Vendor information */
 export interface Vendor {
@@ -65,6 +70,15 @@ export interface ToastMessage {
   title: string;
   description?: string;
   variant: ToastVariant;
+}
+
+/** Review object used by ReviewList component */
+export interface Review {
+  id: string;
+  author: string;
+  rating: number; // 1‑5 stars
+  comment: string;
+  createdAt: string; // ISO date string
 }
 
 /** ----- Vendor‑specific types (added) ----- */

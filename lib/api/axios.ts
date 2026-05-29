@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth-store';
 /**
  * Base API URL – should be set via NEXT_PUBLIC_API_URL in .env.local
  */
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
 
 /**
  * Create an Axios instance with base URL and JSON handling.

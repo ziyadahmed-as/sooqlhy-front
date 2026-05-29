@@ -10,7 +10,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import axios from "@/lib/api/axios";
+import api from '@/lib/api/axios';
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Head from "next/head";
@@ -41,7 +41,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     console.log('🚀 Submitting login with', data.email);
     await login(data.email, data.password);
-    // The login store will update user; the effect above will handle redirect
+    // Ensure user object is populated – some back‑ends return only tokens
+    const { setUser } = useAuthStore.getState();
+    const response = await api.get('/api/auth/me/');
+    setUser(response.data);
+    // The effect below will handle redirection
   };
 
   // Removed redundant fetchUser effect; login response already provides user data
