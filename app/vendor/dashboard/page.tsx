@@ -8,7 +8,7 @@ import { MetricCard } from '@/components/shared/MetricCard';
 import LowStockItem from '@/components/shared/LowStockItem';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
-import { CashIcon, ClockIcon, TruckIcon, ExclamationIcon } from '@heroicons/react/outline';
+import { Banknote as CashIcon, Clock as ClockIcon, Truck as TruckIcon, AlertTriangle as ExclamationIcon } from 'lucide-react';
 import styles from '@/app/styles/vendor.module.css';
 
 export default function DashboardPage() {

@@ -31,16 +31,19 @@ export interface User {
   role: UserRole;
   /** Indicates whether the user's KYC verification is complete */
   is_verified: boolean;
+  [key: string]: any;
 }
 
 /** Product definition */
 export interface Product {
   id: string;
-  title: string; // product name used in UI
-  images: string[]; // array of image URLs
+  title?: string; // product name used in some UI
+  name?: string;  // product name used in some UI
+  images: any; // array of image URLs or objects
   price: number;
-  avg_rating: number; // average rating 0-5
-  vendor: Vendor;
+  avg_rating?: number; // average rating 0-5
+  vendor?: any;
+  [key: string]: any;
 }
 // Category definition for product filtering
 export interface Category {

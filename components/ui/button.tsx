@@ -1,8 +1,7 @@
 "use client";
 
 import React, { forwardRef } from 'react';
-import { twMerge } from 'tailwind-merge';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/utils';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
 export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'ghost';
@@ -33,11 +32,11 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading = false, children, disabled, ...props }, ref) => {
-    const classes = twMerge(
+    const classes = cn(
       baseClasses,
       variantClasses[variant],
       sizeClasses[size],
-      clsx(className)
+      className
     );
     return (
       <motion.button

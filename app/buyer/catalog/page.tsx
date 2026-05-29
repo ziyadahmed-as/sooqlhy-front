@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchCatalog, fetchCategories } from "@/lib/api/catalog";
 import { Product, Category } from "@/lib/types";
@@ -8,14 +8,8 @@ import ProductCard from "@/components/shared/ProductCard";
 import styles from "@/styles/catalog.module.css";
 import Head from "next/head";
 
-export async function generateMetadata() {
-  return {
-    title: "Sooqly Marketplace – Catalog",
-    description: "Browse premium products from multiple vendors. Filter by category, price, and rating.",
-  };
-}
 
-export default function CatalogPage() {
+function CatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -33,6 +27,7 @@ export default function CatalogPage() {
 
   // Load categories once
   useEffect(() => {
+    document.title = "Sooqly Marketplace – Catalog";
     (async () => {
       const cats = await fetchCategories();
       setCategories(cats);
@@ -179,5 +174,13 @@ export default function CatalogPage() {
         </button>
       </div>
     </>
+  );
+}
+
+export default function CatalogPage() {
+  return (
+    <Suspense fallback={<p style={{ textAlign: "center", color: "#fff", padding: "4rem" }}>Loading Catalog…</p>}>
+      <CatalogContent />
+    </Suspense>
   );
 }

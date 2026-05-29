@@ -13,6 +13,7 @@ export const Navbar = () => {
   const navigation = [
     { href: '/', label: 'Home' },
     { href: '/catalog', label: 'Catalog' },
+    { href: '/dashboard', label: 'Dashboard' },
   ];
 
   return (
@@ -26,31 +27,31 @@ export const Navbar = () => {
             {item.label}
           </Link>
         ))}
-          {user?.role === 'vendor' && (
-            <Link href="/vendor/products" className="hover:underline">
-              Vendor Products
-            </Link>
-          )}
-          {user?.role === 'driver' && (
-            <Link href="/driver/deliveries" className="hover:underline">
-              Deliveries
-            </Link>
-          )}
-          {user?.role === 'admin' && (
-            <Link href="/admin/dashboard" className="hover:underline">
-              Admin Dashboard
-            </Link>
-          )}
-          {user?.role === 'moderator' && (
-            <Link href="/moderator/reports" className="hover:underline">
-              Moderation
-            </Link>
-          )}
-          {user?.role === 'buyer' && (
-            <Link href="/buyer/orders" className="hover:underline">
-              My Orders
-            </Link>
-          )}
+        {user?.role === 'vendor' && (
+          <Link href="/vendor/products" className="hover:underline">
+            Vendor Products
+          </Link>
+        )}
+        {user?.role === 'driver' && (
+          <Link href="/driver/deliveries" className="hover:underline">
+            Deliveries
+          </Link>
+        )}
+        {user?.role === 'admin' && (
+          <Link href="/admin/dashboard" className="hover:underline">
+            Admin Dashboard
+          </Link>
+        )}
+        {user?.role === 'moderator' && (
+          <Link href="/moderator/reports" className="hover:underline">
+            Moderation
+          </Link>
+        )}
+        {user?.role === 'buyer' && (
+          <Link href="/buyer/orders" className="hover:underline">
+            My Orders
+          </Link>
+        )}
       </div>
       <div className="flex items-center space-x-2">
         {user && (
