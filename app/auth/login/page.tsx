@@ -43,7 +43,7 @@ export default function LoginPage() {
     await login(data.email, data.password);
     // Ensure user object is populated – some back‑ends return only tokens
     const { setUser } = useAuthStore.getState();
-    const response = await api.get('/api/auth/me/');
+    const response = await api.get('/api/users/auth/me/');
     setUser(response.data);
     // The effect below will handle redirection
   };

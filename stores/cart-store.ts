@@ -1,7 +1,7 @@
 // stores/cart-store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { CartItem, Product } from '@/lib/types';
+import { CartItem, Product } from "../lib/types";
 
 type CartState = {
   items: CartItem[];
@@ -45,9 +45,9 @@ export const useCartStore = create<CartState>()(
         return get().items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
       },
     }),
-      {
-        name: 'cart-storage',
-        storage: createJSONStorage(() => localStorage)
-      }
+    {
+      name: 'cart-storage',
+      storage: createJSONStorage(() => localStorage)
+    }
   )
 );

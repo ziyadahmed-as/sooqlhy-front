@@ -11,18 +11,7 @@ type AuthState = {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: {
-    email: string;
-    username: string;
-    password: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-    phone_number: string;
-    store_name?: string;
-    vehicle_type?: string;
-    license_number?: string;
-  }) => Promise<void>;
+  register: (data: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (old_password: string, new_password: string) => Promise<void>;
   clearAuth: () => void;
@@ -49,21 +38,13 @@ export const useAuthStore = create<AuthState>()(
           set({ error: err?.response?.data?.detail || 'Login failed', loading: false });
         }
       },
-      async register(data: {
-        email: string;
-        username: string;
-        password: string;
-        first_name: string;
-        last_name: string;
-        role: string;
-        phone_number: string;
-        store_name?: string;
-        vehicle_type?: string;
-        license_number?: string;
-      }) {
+      async register({ email, password }: { email: string; password: string }) {
         set({ loading: true, error: null });
         try {
-          await api.post('/api/users/register/', data);
+          await api.post('/api/users/register/', {
+            email,
+            password,
+          });
           set({ loading: false });
         } catch (err: any) {
           const errMsg = err?.response?.data;
