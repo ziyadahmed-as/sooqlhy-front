@@ -12,6 +12,7 @@ type CartState = {
   total: number;
 };
 
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
