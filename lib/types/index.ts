@@ -138,3 +138,39 @@ export interface VendorProfile {
     country: string;
   };
 }
+
+export interface AnalyticsData {
+  total_orders: number;
+  revenue_today: number;
+  revenue_week: number;
+  revenue_month: number;
+  revenue_year: number;
+  average_order_value: number;
+  top_selling_products: {
+    product_id: string | number;
+    name: string;
+    units_sold: number;
+    revenue: number;
+  }[];
+  customer_satisfaction: number;
+  delivery_rating: number;
+  revenue_trend: {
+    date: string;
+    revenue: number;
+  }[];
+  order_volume: {
+    date: string;
+    count: number;
+  }[];
+  rating_distribution: Record<string, number>;
+  product_insights: {
+    product_id: string | number;
+    name: string;
+    views: number;
+    add_to_cart: number;
+    conversion_rate: number;
+    stock: number;
+    price: number;
+    price_suggestion: number | null;
+  }[];
+}
