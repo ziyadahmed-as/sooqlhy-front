@@ -3,9 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { fetchCategories, createVendorProduct, updateVendorProduct } from '@/lib/api/vendor';
+import { fetchCategories, createVendorProduct, updateVendorProduct, submitProductForReview } from '@/lib/api/vendor';
 import type { VendorProduct, Category } from '@/lib/types';
-import { Package, DollarSign, List, Tag, Image as ImageIcon } from 'lucide-react';
+import { Package, DollarSign, List, Tag, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 
 interface ProductFormProps {
   initialData?: VendorProduct | null;
@@ -52,8 +52,9 @@ export default function ProductForm({ initialData }: ProductFormProps) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: any, event: any) => {
     setIsSubmitting(true);
+    const submitterName = event?.nativeEvent?.submitter?.name;
     try {
       const formData = new FormData();
       
@@ -74,12 +75,18 @@ export default function ProductForm({ initialData }: ProductFormProps) {
         formData.append('image', fileInput.files[0]);
       }
 
+      let savedProduct;
       if (isEditing && initialData?.id) {
-        await updateVendorProduct(initialData.id, formData);
-        toast.success("Product updated successfully!");
+        savedProduct = await updateVendorProduct(initialData.id, formData);
+        toast.success("Product updated successfully and set to Draft.");
       } else {
-        await createVendorProduct(formData);
+        savedProduct = await createVendorProduct(formData);
         toast.success("Product created successfully!");
+      }
+      
+      if (submitterName === 'submit_review') {
+        const reviewRes = await submitProductForReview(savedProduct.id);
+        toast.success(reviewRes.message);
       }
       
       router.push('/vendor/products');
@@ -103,6 +110,22 @@ export default function ProductForm({ initialData }: ProductFormProps) {
           Fill in the details below to {isEditing ? 'update your' : 'publish a new'} product to your store.
         </p>
       </div>
+
+      {initialData?.status === 'REJECTED' && initialData?.rejection_reason && (
+        <div className="mb-6 rounded-md bg-red-50 dark:bg-red-900/30 p-4 border border-red-200 dark:border-red-800">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Product Rejected</h3>
+              <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                <p>{initialData.rejection_reason}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Basic Info */}
@@ -263,10 +286,19 @@ export default function ProductForm({ initialData }: ProductFormProps) {
           </button>
           <button
             type="submit"
+            name="save_draft"
+            disabled={isSubmitting}
+            className="rounded-md bg-white px-8 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-700 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSubmitting ? 'Saving...' : 'Save Draft'}
+          </button>
+          <button
+            type="submit"
+            name="submit_review"
             disabled={isSubmitting}
             className="rounded-md bg-primary-600 px-8 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Product'}
+            {isSubmitting ? 'Submitting...' : 'Save & Submit for Review'}
           </button>
         </div>
       </form>

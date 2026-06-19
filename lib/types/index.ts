@@ -34,7 +34,6 @@ export interface User {
   [key: string]: any;
 }
 
-/** Product definition */
 export interface Product {
   id: string;
   title?: string; // product name used in some UI
@@ -43,6 +42,8 @@ export interface Product {
   price: number;
   avg_rating?: number; // average rating 0-5
   vendor?: any;
+  status?: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "ARCHIVED";
+  rejection_reason?: string;
   [key: string]: any;
 }
 // Category definition for product filtering

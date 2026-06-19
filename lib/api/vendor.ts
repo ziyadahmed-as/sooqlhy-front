@@ -83,3 +83,9 @@ export async function updateVendorProduct(id: string, formData: FormData): Promi
   });
   return data;
 }
+
+/** Submit a product for review. */
+export async function submitProductForReview(id: string): Promise<{ status: string, message: string }> {
+  const { data } = await axios.post<{ status: string, message: string }>(`/api/products/${id}/submit_for_review/`);
+  return data;
+}
