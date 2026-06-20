@@ -3,7 +3,7 @@ import { Product, Category } from '@/lib/types';
 
 /** Fetch product catalog with optional filters */
 export const fetchCatalog = async (params: Record<string, any>) => {
-  const response = await api.get('/api/products/catalog/', { params });
+  const response = await api.get('/api/product/', { params });
   return response.data; // expected { results: Product[], count: number }
 };
 
@@ -15,7 +15,7 @@ export const fetchCategories = async (): Promise<Category[]> => {
 
 /** Fetch detailed info for a single product */
 export const fetchProductDetail = async (id: string) => {
-  const response = await api.get(`/api/products/catalog/${id}/`);
+  const response = await api.get(`/api/products/product/${id}/`);
   return response.data as Product & {
     description: string;
     stock: number;

@@ -1,0 +1,25 @@
+:root {
+  --brand-primary-green: #2d5a27; /* forest green */
+  --brand-secondary-brown: #4e3629; /* bark brown */
+  --brand-accent: #f4a92a; /* amber */
+}
+
+.bg-brand-primary {
+  background-color: var(--brand-primary-green);
+}
+
+.bg-brand-secondary {
+  background-color: var(--brand-secondary-brown);
+}
+
+.text-brand-primary {
+  color: var(--brand-primary-green);
+}
+
+.text-brand-secondary {
+  color: var(--brand-secondary-brown);
+}
+
+.accent {
+  color: var(--brand-accent);
+}

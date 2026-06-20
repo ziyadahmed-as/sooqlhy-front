@@ -14,6 +14,7 @@ import api from '@/lib/api/axios';
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Head from "next/head";
+import brand from '@/app/styles/brand.module.css'; // brand colors
 
 interface LoginFormValues {
   email: string;
@@ -92,14 +93,14 @@ export default function LoginPage() {
           }}
         />
       </Head>
-      <div className="flex min-h-screen bg-[#f8f6f2] font-sans">
+      <div className={`flex min-h-screen ${brand["bg-brand-secondary"]} font-sans`}>
         {/* Left side: Premium Image/Branding */}
-        <div className="hidden lg:flex w-1/2 bg-[#0B1F3A] flex-col justify-center items-center relative overflow-hidden">
+        <div className={`hidden lg:flex w-1/2 ${brand["bg-brand-primary"]} flex-col justify-center items-center relative overflow-hidden`}>
           <div className="absolute inset-0 opacity-20">
             {/* Abstract pattern or premium gradient */}
-            <div className="absolute top-0 left-0 w-96 h-96 bg-[#f4a92a] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#0f6e56] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-8 left-20 w-96 h-96 bg-[#1a5fa8] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+            <div className={`absolute top-0 left-0 w-96 h-96 ${brand["accent"]} rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob`}></div>
+            <div className={`absolute top-0 right-0 w-96 h-96 ${brand["bg-brand-primary"]} rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000`}></div>
+            <div className={`absolute -bottom-8 left-20 w-96 h-96 ${brand["bg-brand-primary"]} rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000`}></div>
           </div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -123,27 +124,27 @@ export default function LoginPage() {
             className="w-full max-w-md"
           >
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-[#0B1F3A] mb-2">Sign in to your account</h2>
+              <h2 className={`text-3xl font-bold ${brand["text-brand-primary"]} mb-2`}>Sign in to your account</h2>
               <p className="text-gray-500">Enter your email and password to access the platform</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-[#0B1F3A]">Email address</label>
-                <Input type="email" placeholder="you@example.com" {...register("email")} />
+                <Input type="email" placeholder="you@example.com" className={brand["bg-brand-secondary"]} {...register("email")} />
                 {errors.email && (
-                  <p className="text-sm text-[#e05a2b] mt-1">{errors.email.message}</p>
+                  <p className={`${brand["text-brand-error"]} text-sm mt-1`}>{errors.email.message}</p>
                 )}
               </div>
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-[#0B1F3A]">Password</label>
-                  <Link href="/auth/forgot-password" className="text-sm text-[#1a5fa8] hover:text-[#0B1F3A] transition-colors font-medium">Forgot password?</Link>
+                  <label className={`text-sm font-medium ${brand["text-brand-primary"]}`}>Password</label>
+                  <Link href="/auth/forgot-password" className={`text-sm ${brand["text-brand-primary"]} hover:${brand["text-brand-primary"]} transition-colors font-medium`}>Forgot password?</Link>
                 </div>
-                <Input type="password" placeholder="••••••••" {...register("password")} />
+                <Input type="password" placeholder="••••••••" className={brand["bg-brand-secondary"]} {...register("password")} />
                 {errors.password && (
-                  <p className="text-sm text-[#e05a2b] mt-1">{errors.password.message}</p>
+                  <p className={`text-sm ${brand["text-brand-error"]} mt-1`}>{errors.password.message}</p>
                 )}
               </div>
 
@@ -157,7 +158,7 @@ export default function LoginPage() {
                 </motion.div>
               )}
 
-              <Button type="submit" variant="primary" disabled={loading} className="w-full h-12 text-lg">
+              <Button type="submit" variant="primary" disabled={loading} className={`${brand["bg-brand-primary"]} w-full h-12 text-lg`}>
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
 

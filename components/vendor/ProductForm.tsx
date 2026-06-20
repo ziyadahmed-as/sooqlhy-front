@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchCategories, createVendorProduct, updateVendorProduct, submitProductForReview } from '@/lib/api/vendor';
 import type { VendorProduct, Category } from '@/lib/types';
-import { Package, DollarSign, List, Tag, Image as ImageIcon, AlertTriangle } from 'lucide-react';
+import { Package, DollarSign, List, Tag, Image as ImageIcon, AlertTriangle, Layers, Tag as TagIcon, Settings, ClipboardList, FileText, Shield } from 'lucide-react';
 
 interface ProductFormProps {
   initialData?: VendorProduct | null;
@@ -15,9 +15,11 @@ export default function ProductForm({ initialData }: ProductFormProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [variants, setVariants] = useState<Array<any>>([]);
+  const [tagsInput, setTagsInput] = useState('');
   const isEditing = !!initialData;
 
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm({
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
@@ -27,6 +29,19 @@ export default function ProductForm({ initialData }: ProductFormProps) {
       category: initialData?.category || '',
       is_active: initialData?.is_active ?? true,
       is_digital: initialData?.is_digital ?? false,
+      sku: initialData?.sku || '',
+      barcode: initialData?.barcode || '',
+      weight: initialData?.weight || 0,
+      length: initialData?.length || 0,
+      width: initialData?.width || 0,
+      height: initialData?.height || 0,
+      brand: initialData?.brand || '',
+      meta_title: initialData?.meta_title || '',
+      meta_description: initialData?.meta_description || '',
+      is_featured: initialData?.is_featured ?? false,
+      is_archived: initialData?.is_archived ?? false,
+      backorder_allowed: initialData?.backorder_allowed ?? false,
+      out_of_stock_auto_hide: initialData?.out_of_stock_auto_hide ?? false,
     }
   });
 
@@ -44,7 +59,33 @@ export default function ProductForm({ initialData }: ProductFormProps) {
         category: initialData.category || '',
         is_active: initialData.is_active ?? true,
         is_digital: initialData.is_digital ?? false,
+        sku: initialData.sku || '',
+        barcode: initialData.barcode || '',
+        weight: initialData.weight || 0,
+        length: initialData.length || 0,
+        width: initialData.width || 0,
+        height: initialData.height || 0,
+        brand: initialData.brand || '',
+        meta_title: initialData.meta_title || '',
+        meta_description: initialData.meta_description || '',
+        is_featured: initialData.is_featured ?? false,
+        is_archived: initialData.is_archived ?? false,
+        backorder_allowed: initialData.backorder_allowed ?? false,
+        out_of_stock_auto_hide: initialData.out_of_stock_auto_hide ?? false,
       });
+      // Init tags as comma‑separated string
+      setTagsInput((initialData.tags || []).join(', '));
+      // Init variants if any
+      if (initialData.variants) {
+        setVariants(initialData.variants.map(v => ({
+          sku: v.sku,
+          price: v.price,
+          name: v.name,
+          value: v.value,
+          stock: v.stock,
+          price_adjustment: v.price_adjustment,
+        })));
+      }
     }
   }, [initialData, reset]);
 
@@ -52,48 +93,83 @@ export default function ProductForm({ initialData }: ProductFormProps) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
   };
 
+  const addVariant = () => {
+    setVariants([...variants, { sku: '', price: 0, name: '', value: '', stock: 0, price_adjustment: 0 }]);
+  };
+
+  const updateVariant = (index: number, field: string, value: any) => {
+    const newVariants = [...variants];
+    newVariants[index][field] = value;
+    setVariants(newVariants);
+  };
+
+  const removeVariant = (index: number) => {
+    const newVariants = variants.filter((_, i) => i !== index);
+    setVariants(newVariants);
+  };
+
   const onSubmit = async (data: any, event: any) => {
     setIsSubmitting(true);
     const submitterName = event?.nativeEvent?.submitter?.name;
     try {
       const formData = new FormData();
-      
-      // Basic text fields
+      // Basic fields
       formData.append('name', data.name);
       formData.append('slug', generateSlug(data.name));
       formData.append('description', data.description);
       formData.append('price', data.price.toString());
       formData.append('stock', data.stock.toString());
       formData.append('low_stock_threshold', data.low_stock_threshold.toString());
-      if (data.category) formData.append('category', data.category);
+      formData.append('sku', data.sku);
+      formData.append('barcode', data.barcode);
+      formData.append('weight', data.weight.toString());
+      formData.append('length', data.length.toString());
+      formData.append('width', data.width.toString());
+      formData.append('height', data.height.toString());
+      formData.append('brand', data.brand);
+      formData.append('meta_title', data.meta_title);
+      formData.append('meta_description', data.meta_description);
+      formData.append('is_featured', data.is_featured.toString());
+      formData.append('is_archived', data.is_archived.toString());
+      formData.append('backorder_allowed', data.backorder_allowed.toString());
+      formData.append('out_of_stock_auto_hide', data.out_of_stock_auto_hide.toString());
       formData.append('is_active', data.is_active.toString());
       formData.append('is_digital', data.is_digital.toString());
-
-      // Handle Image File if present
+      if (data.category) formData.append('category', data.category);
+      // Tags – split by commas, trim, and JSON‑stringify for backend list field
+      const tagsArray = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+      formData.append('tags', JSON.stringify(tagsArray));
+      // Variants – send as JSON string
+      if (variants.length) {
+        formData.append('variants', JSON.stringify(variants));
+      }
+      // Images – support multiple uploads
       const fileInput = document.getElementById('image-upload') as HTMLInputElement;
-      if (fileInput && fileInput.files && fileInput.files[0]) {
-        formData.append('image', fileInput.files[0]);
+      if (fileInput && fileInput.files) {
+        Array.from(fileInput.files).forEach((file, idx) => {
+          formData.append(`images[${idx}]`, file);
+        });
       }
 
       let savedProduct;
       if (isEditing && initialData?.id) {
         savedProduct = await updateVendorProduct(initialData.id, formData);
-        toast.success("Product updated successfully and set to Draft.");
+        toast.success('Product updated successfully and set to Draft.');
       } else {
         savedProduct = await createVendorProduct(formData);
-        toast.success("Product created successfully!");
+        toast.success('Product created successfully!');
       }
-      
+
       if (submitterName === 'submit_review') {
         const reviewRes = await submitProductForReview(savedProduct.id);
         toast.success(reviewRes.message);
       }
-      
+
       router.push('/vendor/products');
       router.refresh();
     } catch (error: any) {
       console.error(error);
-      toast.error(error.response?.data?.detail || "An error occurred while saving the product.");
+      toast.error(error.response?.data?.detail || 'An error occurred while saving the product.');
     } finally {
       setIsSubmitting(false);
     }

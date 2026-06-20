@@ -119,6 +119,9 @@ export interface Variant {
   value: string;
   price: number; // additional price over base product
   stock: number;
+  price_adjustment?: number; // optional adjustment for variant pricing
+  sku?: string; // optional SKU identifier
+  name?: string; // optional human‑readable variant name
 }
 
 export interface VendorProduct extends Product {
