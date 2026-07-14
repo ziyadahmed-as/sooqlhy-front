@@ -1,91 +1,63 @@
-import axios from '@/lib/api/axios';
-import type { VendorStats, VendorProduct } from '@/lib/types';
+// lib/api/vendor.ts
+import api from '@/lib/api/axios';
+import type { VendorStats, VendorProduct, Category, PaginatedResponse } from '@/lib/types';
 
-/** Fetch aggregated statistics for the logged‑in vendor. */
-export async function fetchVendorStats(): Promise<VendorStats> {
-  const { data } = await axios.get<VendorStats>('/api/orders/my-orders/vendor_stats/');
+// Re-export analytics helpers for backwards compatibility
+export { fetchVendorAnalytics, exportVendorAnalytics } from './analytics';
+
+/** Fetch aggregated statistics for the logged-in vendor */
+export const fetchVendorStats = async (): Promise<VendorStats> => {
+  const { data } = await api.get<VendorStats>('/api/orders/my-orders/vendor_stats/');
   return data;
-}
+};
 
-/** Fetch low‑stock products for the vendor. */
-export async function fetchLowStockProducts(): Promise<VendorProduct[]> {
-  const { data } = await axios.get<VendorProduct[]>('/api/products/low_stock/');
+/** Fetch low-stock products for the vendor */
+export const fetchLowStockProducts = async (): Promise<VendorProduct[]> => {
+  const { data } = await api.get<VendorProduct[]>('/api/products/low_stock/');
+  return Array.isArray(data) ? data : (data as any).results ?? [];
+};
+
+/** Fetch products for the logged-in vendor */
+export const fetchVendorProducts = async (params?: Record<string, string | number>): Promise<VendorProduct[]> => {
+  const { data } = await api.get<VendorProduct[] | PaginatedResponse<VendorProduct>>('/api/products/my_products/', { params });
+  return Array.isArray(data) ? data : (data as PaginatedResponse<VendorProduct>).results ?? [];
+};
+
+/** Fetch all product categories */
+export const fetchCategories = async (): Promise<Category[]> => {
+  const { data } = await api.get<Category[] | PaginatedResponse<Category>>('/api/products/categories/');
+  return Array.isArray(data) ? data : (data as PaginatedResponse<Category>).results ?? [];
+};
+
+/** Fetch a single product's details for editing */
+export const fetchProductDetails = async (id: string): Promise<VendorProduct> => {
+  const { data } = await api.get<VendorProduct>(`/api/products/${id}/`);
   return data;
-}
+};
 
-/** Fetch products for the vendor. */
-export async function fetchVendorProducts(): Promise<VendorProduct[]> {
-  const response = await axios.get<VendorProduct[]>('/api/products/my_products/');
-  return response.data;
-}
-
-/** Fetch all products belonging to the logged‑in vendor. */
-export async function fetchAllVendorProducts(): Promise<VendorProduct[]> {
-  const { data } = await axios.get<VendorProduct[]>('/api/products/my_products/');
-  return data;
-}
-
-/** Fetch comprehensive vendor analytics data. */
-export async function fetchVendorAnalytics(): Promise<import('@/lib/types').AnalyticsData> {
-  const { data } = await axios.get<import('@/lib/types').AnalyticsData>('/api/analytics/vendor/');
-  return data;
-}
-
-/** Export vendor analytics data. */
-export async function exportVendorAnalytics(format: 'csv' | 'pdf'): Promise<void> {
-  const response = await axios.get(`/api/analytics/vendor/export/?format=${format}`, {
-    responseType: 'blob', // Important for file downloads
-  });
-  
-  // Create a blob from the response data
-  const blob = new Blob([response.data], { 
-    type: format === 'pdf' ? 'application/pdf' : 'text/csv' 
-  });
-  
-  // Create a link element, set its href to the blob, and trigger a download
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', `vendor_analytics.${format}`);
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  link.parentNode?.removeChild(link);
-  window.URL.revokeObjectURL(url);
-}
-
-/** Fetch a single product's details for editing. */
-export async function fetchProductDetails(id: string): Promise<VendorProduct> {
-  const { data } = await axios.get<VendorProduct>(`/api/products/${id}/`);
-  return data;
-}
-
-/** Fetch all product categories. */
-export async function fetchCategories(): Promise<import('@/lib/types').Category[]> {
-  const { data } = await axios.get<import('@/lib/types').Category[]>('/api/products/categories/');
-  return data;
-}
-
-/** Create a new product. */
-export async function createVendorProduct(formData: FormData): Promise<VendorProduct> {
-  // Use multipart/form-data for image uploads
-  const { data } = await axios.post<VendorProduct>('/api/products/', formData, {
+/** Create a new product (multipart/form-data for image uploads) */
+export const createVendorProduct = async (formData: FormData): Promise<VendorProduct> => {
+  const { data } = await api.post<VendorProduct>('/api/products/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data;
-}
+};
 
-/** Update an existing product. */
-export async function updateVendorProduct(id: string, formData: FormData): Promise<VendorProduct> {
-  const { data } = await axios.patch<VendorProduct>(`/api/products/${id}/`, formData, {
+/** Update an existing product */
+export const updateVendorProduct = async (id: string, formData: FormData): Promise<VendorProduct> => {
+  const { data } = await api.patch<VendorProduct>(`/api/products/${id}/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data;
-}
+};
 
-/** Submit a product for review. */
-export async function submitProductForReview(id: string): Promise<{ status: string, message: string }> {
-  const { data } = await axios.post<{ status: string, message: string }>(`/api/products/${id}/submit_for_review/`);
+/** Submit a product for moderation review */
+export const submitProductForReview = async (id: string): Promise<{ status: string; message: string }> => {
+  const { data } = await api.post<{ status: string; message: string }>(`/api/products/${id}/submit_for_review/`);
   return data;
-}
+};
+
+/** Delete a vendor product */
+export const deleteVendorProduct = async (id: string): Promise<void> => {
+  await api.delete(`/api/products/${id}/`);
+};

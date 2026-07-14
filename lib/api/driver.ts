@@ -1,77 +1,69 @@
-import axios from 'axios';
-import type { DriverProfile, DriverAssignment, LocationUpdate, OrderStatusUpdate } from '../typings/driver';
+// lib/api/driver.ts – Uses authenticated axios instance
+import api from '@/lib/api/axios';
+import type { DriverAssignment } from '@/lib/types';
 
-const API_BASE = '/api/driver';
+export interface DriverProfile {
+  id: number;
+  userId: number;
+  status: 'AVAILABLE' | 'BUSY' | 'OFFLINE' | 'RESTING';
+  maxConcurrentDeliveries: number;
+  latitude?: number;
+  longitude?: number;
+  rating?: number;
+}
+
+export interface LocationUpdate {
+  latitude: number;
+  longitude: number;
+}
+
+export interface OrderStatusUpdate {
+  status: string;
+  eta?: string;
+}
 
 export const getDriverProfile = async (driverId: number): Promise<DriverProfile> => {
-  const response = await axios.get<DriverProfile>(`${API_BASE}/profile/${driverId}/`);
-  return response.data;
+  const { data } = await api.get<DriverProfile>(`/api/driver/profile/${driverId}/`);
+  return data;
 };
 
 export const updateDriverStatus = async (driverId: number, status: string): Promise<void> => {
-  await axios.patch(`${API_BASE}/profile/${driverId}/`, { status });
+  await api.patch(`/api/driver/profile/${driverId}/`, { status });
 };
 
 export const updateDriverLocation = async (driverId: number, latitude: number, longitude: number): Promise<void> => {
-  const payload: LocationUpdate = { latitude, longitude };
-  await axios.post(`${API_BASE}/location/${driverId}/`, payload);
+  await api.post(`/api/driver/location/${driverId}/`, { latitude, longitude } as LocationUpdate);
 };
 
+/** Fetch all assignments for a specific driver */
 export const getAssignments = async (driverId: number): Promise<DriverAssignment[]> => {
-  const response = await axios.get<DriverAssignment[]>(`${API_BASE}/assignments/${driverId}/`);
-  return response.data;
+  const { data } = await api.get<DriverAssignment[]>(`/api/driver/assignments/${driverId}/`);
+  return data;
 };
 
-// New wrapper for the current driver (assumes authentication provides driver context)
+/** Fetch assignments for the currently authenticated driver */
 export const fetchDriverAssignments = async (): Promise<DriverAssignment[]> => {
-  // Calls the endpoint without driverId, expecting backend to infer the driver from auth token
-  const response = await axios.get<DriverAssignment[]>(`${API_BASE}/assignments/`);
-  return response.data;
+  const { data } = await api.get<DriverAssignment[]>('/api/driver/assignments/');
+  return Array.isArray(data) ? data : (data as any).results ?? [];
 };
 
-export const updateOrderStatus = async (orderId: number, status: string, eta?: string): Promise<void> => {
-  const payload: OrderStatusUpdate = { status, eta };
-  await axios.post(`${API_BASE}/order/${orderId}/status/`, payload);
+export const acceptAssignment = async (assignmentId: number): Promise<void> => {
+  await api.post(`/api/driver/assignments/${assignmentId}/accept/`);
 };
 
-export const uploadDeliveryProof = async (orderId: number, proofFile: File, signatureFile?: File): Promise<void> => {
+export const rejectAssignment = async (assignmentId: number): Promise<void> => {
+  await api.post(`/api/driver/assignments/${assignmentId}/reject/`);
+};
+
+export const updateDeliveryStatus = async (orderId: number, status: string, eta?: string): Promise<void> => {
+  await api.post(`/api/driver/order/${orderId}/status/`, { status, eta } as OrderStatusUpdate);
+};
+
+export const uploadProof = async (orderId: number, proofFile: File, signatureFile?: File): Promise<void> => {
   const form = new FormData();
   form.append('proof', proofFile);
   if (signatureFile) form.append('signature', signatureFile);
-  await axios.post(`${API_BASE}/order/${orderId}/proof/`, form, {
+  await api.post(`/api/driver/order/${orderId}/proof/`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-};
-
-// ---------------------------------------------------------------------------
-// Additional driver actions used by the frontend dashboard
-// ---------------------------------------------------------------------------
-
-/** Accept an assignment by its ID */
-export const acceptAssignment = async (assignmentId: number): Promise<void> => {
-  await axios.post(`${API_BASE}/assignments/${assignmentId}/accept/`);
-};
-
-/** Reject an assignment by its ID */
-export const rejectAssignment = async (assignmentId: number): Promise<void> => {
-  await axios.post(`${API_BASE}/assignments/${assignmentId}/reject/`);
-};
-
-/** Update delivery status for an order (wrapper around updateOrderStatus) */
-export const updateDeliveryStatus = async (
-  orderId: number,
-  status: string,
-  eta?: string
-): Promise<void> => {
-  // Re‑use the generic order‑status endpoint
-  await updateOrderStatus(orderId, status, eta);
-};
-
-/** Upload proof of delivery – wrapper around uploadDeliveryProof */
-export const uploadProof = async (
-  orderId: number,
-  proofFile: File,
-  signatureFile?: File
-): Promise<void> => {
-  await uploadDeliveryProof(orderId, proofFile, signatureFile);
 };

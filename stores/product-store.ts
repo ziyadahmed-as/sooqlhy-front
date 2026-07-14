@@ -1,8 +1,9 @@
+// stores/product-store.ts
 import { create } from 'zustand';
 import api from '@/lib/api/axios';
-import { Product } from '@/lib/types';
+import type { Product, Category } from '@/lib/types';
 
-type ProductState = {
+interface ProductState {
   products: Product[];
   featuredProducts: Product[];
   categories: Category[];
@@ -11,17 +12,9 @@ type ProductState = {
   fetchProducts: (params?: Record<string, string>) => Promise<void>;
   fetchFeaturedProducts: () => Promise<void>;
   fetchCategories: () => Promise<void>;
-};
+}
 
-export type Category = {
-  id: number;
-  name: string;
-  slug: string;
-  parent: number | null;
-  image: string | null;
-};
-
-export const useProductStore = create<ProductState>()((set) => ({
+export const useProductStore = create<ProductState>((set) => ({
   products: [],
   featuredProducts: [],
   categories: [],
@@ -31,14 +24,12 @@ export const useProductStore = create<ProductState>()((set) => ({
   async fetchProducts(params) {
     set({ loading: true, error: null });
     try {
-      const response = await api.get('/api/products/catalog/', { params });
-      // DRF may return paginated { results: [...] } or a plain array
-      const data = response.data;
-      const list = Array.isArray(data) ? data : data.results ?? [];
+      const { data } = await api.get('/api/product/', { params });
+      const list: Product[] = Array.isArray(data) ? data : data.results ?? [];
       set({ products: list, loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       set({
-        error: err?.response?.data?.detail || 'Failed to load products',
+        error: (err as any)?.response?.data?.detail || 'Failed to load products',
         loading: false,
       });
     }
@@ -47,15 +38,14 @@ export const useProductStore = create<ProductState>()((set) => ({
   async fetchFeaturedProducts() {
     set({ loading: true, error: null });
     try {
-      const response = await api.get('/api/products/catalog/', {
+      const { data } = await api.get('/api/product/', {
         params: { is_featured: 'true' },
       });
-      const data = response.data;
-      const list = Array.isArray(data) ? data : data.results ?? [];
+      const list: Product[] = Array.isArray(data) ? data : data.results ?? [];
       set({ featuredProducts: list, loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       set({
-        error: err?.response?.data?.detail || 'Failed to load featured products',
+        error: (err as any)?.response?.data?.detail || 'Failed to load featured products',
         loading: false,
       });
     }
@@ -63,9 +53,8 @@ export const useProductStore = create<ProductState>()((set) => ({
 
   async fetchCategories() {
     try {
-      const response = await api.get('/api/products/categories/');
-      const data = response.data;
-      const list = Array.isArray(data) ? data : data.results ?? [];
+      const { data } = await api.get('/api/products/categories/');
+      const list: Category[] = Array.isArray(data) ? data : data.results ?? [];
       set({ categories: list });
     } catch {
       // Categories are non-critical – silently ignore

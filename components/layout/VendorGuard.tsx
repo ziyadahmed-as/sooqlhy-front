@@ -5,29 +5,33 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 
 /**
- * Guard that allows only KYC‑verified vendors.
- * If the user is not verified, they are redirected to /kyc-status.
- * The guard does **not** redirect when already on the KYC page to avoid a loop.
+ * Guard that allows only KYC-verified vendors.
+ * Handles both uppercase (API) and lowercase (JWT middleware) role values.
  */
 export const VendorGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuthStore();
 
-  // Roles that require KYC verification before accessing vendor sections
-  const KYC_ROLES = ['VENDOR', 'DRIVER'];
+  // Roles that require KYC verification (compare case-insensitively)
+  const KYC_ROLES = ['vendor', 'driver'];
 
   useEffect(() => {
-    const onKycPage = pathname?.startsWith('/kyc-status');
-    const needsKyc = user && KYC_ROLES.includes(user.role) && !user.is_verified;
+    if (!user) return;
+    const role = user.role?.toLowerCase();
+    const onKycPage = pathname?.startsWith('/auth/kyc');
+    const needsKyc = KYC_ROLES.includes(role) && !user.is_verified;
     if (needsKyc && !onKycPage) {
-      router.replace('/kyc-status');
+      router.replace('/auth/kyc');
     }
   }, [user, router, pathname]);
 
-  // While redirecting or if the user is not a verified vendor, render nothing
-  if (user && KYC_ROLES.includes(user.role) && !user.is_verified) {
+  if (!user) return null;
+
+  const role = user.role?.toLowerCase();
+  if (KYC_ROLES.includes(role) && !user.is_verified) {
     return null;
   }
+
   return <>{children}</>;
 };

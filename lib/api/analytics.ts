@@ -1,39 +1,33 @@
+// lib/api/analytics.ts
 import api from './axios';
+import type { DailyAnalytics, AnalyticsData } from '@/lib/types';
 
-export interface DailyAnalytics {
-    id: number;
-    date: string;
-    page_views: number;
-    registrations: number;
-    conversions: number;
-}
-
-export interface VendorAnalytics {
-    total_orders: number;
-    revenue_today: number;
-    revenue_week: number;
-    revenue_month: number;
-    revenue_year: number;
-    average_order_value: number;
-    top_selling_products: Array<{ id: number; name: string; units_sold: number; revenue: number }>;
-    customer_satisfaction: number;
-    delivery_rating: number;
-    revenue_trend: Array<{ date: string; revenue: number }>;
-    order_volume: Array<{ date: string; count: number }>;
-    rating_distribution: Record<string, number>;
-    product_insights: Array<{
-        product_id: number;
-        name: string;
-        views: number;
-        add_to_cart: number;
-        conversion_rate: number;
-        stock: number;
-        price: number;
-        price_suggestion: number | null;
-    }>;
-}
-
+/** Fetch daily platform analytics (admin only) */
 export const fetchDailyAnalytics = async (): Promise<DailyAnalytics[]> => {
-    const response = await api.get('/api/analytics/daily/');
-    return response.data;
+  const { data } = await api.get<DailyAnalytics[]>('/api/analytics/daily/');
+  return Array.isArray(data) ? data : (data as any).results ?? [];
+};
+
+/** Fetch comprehensive vendor analytics for the logged-in vendor */
+export const fetchVendorAnalytics = async (): Promise<AnalyticsData> => {
+  const { data } = await api.get<AnalyticsData>('/api/analytics/vendor/');
+  return data;
+};
+
+/** Export vendor analytics as CSV or PDF */
+export const exportVendorAnalytics = async (format: 'csv' | 'pdf'): Promise<void> => {
+  const response = await api.get(`/api/analytics/vendor/export/?format=${format}`, {
+    responseType: 'blob',
+  });
+  const blob = new Blob([response.data], {
+    type: format === 'pdf' ? 'application/pdf' : 'text/csv',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `vendor_analytics.${format}`);
+  document.body.appendChild(link);
+  link.click();
+  link.parentNode?.removeChild(link);
+  window.URL.revokeObjectURL(url);
 };
