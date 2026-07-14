@@ -9,19 +9,19 @@ export async function fetchVendorStats(): Promise<VendorStats> {
 
 /** Fetch low‑stock products for the vendor. */
 export async function fetchLowStockProducts(): Promise<VendorProduct[]> {
-  const { data } = await axios.get<VendorProduct[]>('/api/orders/my-orders/low_stock/');
+  const { data } = await axios.get<VendorProduct[]>('/api/products/low_stock/');
   return data;
 }
 
 /** Fetch products for the vendor. */
 export async function fetchVendorProducts(): Promise<VendorProduct[]> {
-  const response = await axios.get<VendorProduct[]>('/api/orders/my-orders/vendor_products/');
+  const response = await axios.get<VendorProduct[]>('/api/products/my_products/');
   return response.data;
 }
 
 /** Fetch all products belonging to the logged‑in vendor. */
 export async function fetchAllVendorProducts(): Promise<VendorProduct[]> {
-  const { data } = await axios.get<VendorProduct[]>('/api/vendor/products/');
+  const { data } = await axios.get<VendorProduct[]>('/api/products/my_products/');
   return data;
 }
 

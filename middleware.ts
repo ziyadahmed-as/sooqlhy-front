@@ -7,6 +7,7 @@ import { jwtDecode } from 'jwt-decode';
  */
  interface JwtPayload {
    role?: string;
+   exp?: number;
  };
 
 /**
@@ -67,12 +68,16 @@ import { jwtDecode } from 'jwt-decode';
    }
 
    const payload = decodeToken(token);
-   if (!payload?.role) {
-     // Invalid payload – treat as unauthenticated
-     const loginUrl = request.nextUrl.clone();
-     loginUrl.pathname = '/auth/login';
-     return NextResponse.redirect(loginUrl);
-   }
+    
+    // Check if token is expired
+    const isExpired = payload?.exp ? Date.now() >= payload.exp * 1000 : true;
+
+    if (!payload?.role || isExpired) {
+      // Invalid or expired payload – treat as unauthenticated
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/auth/login';
+      return NextResponse.redirect(loginUrl);
+    }
 
    // Role‑based protection – the first segment after the root determines the area
    const roleSegment = pathname.split('/')[1]; // e.g. "buyer", "vendor", etc.

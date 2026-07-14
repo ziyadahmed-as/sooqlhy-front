@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       accessToken: null,
-      refreshToken: null,
+      refreshToken: Cookies.get('refreshToken') || null,
       loading: false,
       error: null,
       async login(email: string, password: string) {
@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       async logout() {
-        const { refreshToken } = get();
+        const refreshToken = get().refreshToken || Cookies.get('refreshToken');
         try {
           if (refreshToken) {
             await api.post('/api/auth/logout/', { refresh: refreshToken });
@@ -94,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ user: state.user }),
     }
   )
 );
