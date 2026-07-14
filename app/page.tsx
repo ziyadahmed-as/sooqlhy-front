@@ -36,21 +36,6 @@ import { Product, Category } from "@/lib/types";
 import { toast } from "sonner";
 import SectionWrapper from "@/components/sections/SectionWrapper";
 
-// Custom Mock Product Type for Fallback visual rich cards
-interface MockProduct {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  discount: number;
-  rating: number;
-  reviews: number;
-  image: string;
-  soldPercent?: number;
-  isFreeShipping?: boolean;
-  isChoice?: boolean;
-}
-
 export default function Home() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -195,114 +180,6 @@ export default function Home() {
       image: "https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=1470&auto=format&fit=crop",
       link: "/buyer/catalog",
       bgClass: "from-blue-950 via-indigo-950 to-purple-950 text-white"
-    }
-  ];
-
-  // Category items (Sidebar)
-  const categoriesList = [
-    { id: "electronics", label: "Consumer Electronics", sub: ["Smartphones", "Laptops", "Smartwatches", "Airbuds", "Gaming Consoles"] },
-    { id: "fashion", label: "Men & Women Fashion", sub: ["Dresses", "Jackets", "Hoodies", "Sneakers", "Jewelry", "Watches"] },
-    { id: "home", label: "Home, Garden & Kitchen", sub: ["Spoons & Cutlery", "LED Lights", "Decorations", "Plates", "Beddings"] },
-    { id: "beauty", label: "Beauty & Health", sub: ["Makeup Tools", "Skincare", "Massage Guns", "Hair Styling", "Perfumes"] },
-    { id: "sports", label: "Sports & Outdoors", sub: ["Camping Gear", "Bicycles", "Yoga Mats", "Dumbbells", "Running Shoes"] },
-    { id: "toys", label: "Toys, Hobbies & Babies", sub: ["Action Figures", "Puzzles", "Baby Care", "RC Drones", "Board Games"] },
-    { id: "phones", label: "Phones & Accessories", sub: ["Phone Cases", "Cables", "Power Banks", "Screen Protectors", "Tripods"] },
-    { id: "tools", label: "Tools & Home Utilities", sub: ["Screwdrivers", "Drills", "Organizers", "Measuring Tapes", "Smart Locks"] }
-  ];
-
-
-
-  // More to Love Mock Products (Fallback feed when DB is empty)
-  const fallbackFeed: MockProduct[] = [
-    {
-      id: "ml1",
-      name: "Ultra Bass Bluetooth Headphones Over-Ear Earcups",
-      price: 34.99,
-      originalPrice: 89.99,
-      discount: 61,
-      rating: 4.8,
-      reviews: 340,
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600&auto=format&fit=crop",
-      isFreeShipping: true,
-      isChoice: true
-    },
-    {
-      id: "ml2",
-      name: "Ultrasonic Humidifier & Essential Oil Diffuser RGB",
-      price: 19.99,
-      originalPrice: 42.00,
-      discount: 52,
-      rating: 4.7,
-      reviews: 188,
-      image: "https://images.unsplash.com/photo-1519183071298-a2962feb14f4?q=80&w=600&auto=format&fit=crop",
-      isFreeShipping: true
-    },
-    {
-      id: "ml3",
-      name: "Rechargeable Facial Cleansing Brush Waterproof",
-      price: 11.45,
-      originalPrice: 29.99,
-      discount: 61,
-      rating: 4.5,
-      reviews: 95,
-      image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600&auto=format&fit=crop",
-      isChoice: true
-    },
-    {
-      id: "ml4",
-      name: "Unisex Retro Streetwear Sneakers Lightweight Comfort",
-      price: 27.80,
-      originalPrice: 65.00,
-      discount: 57,
-      rating: 4.9,
-      reviews: 512,
-      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop",
-      isFreeShipping: true,
-      isChoice: true
-    },
-    {
-      id: "ml5",
-      name: "HD WiFi Mini Smart Projector Home Cinema",
-      price: 49.99,
-      originalPrice: 120.00,
-      discount: 58,
-      rating: 4.6,
-      reviews: 84,
-      image: "https://images.unsplash.com/photo-1535016120720-40c646be5580?q=80&w=600&auto=format&fit=crop",
-      isFreeShipping: true
-    },
-    {
-      id: "ml6",
-      name: "Premium Chef Knife High Carbon Stainless Steel 8-inch",
-      price: 22.90,
-      originalPrice: 45.00,
-      discount: 49,
-      rating: 4.8,
-      reviews: 1040,
-      image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=600&auto=format&fit=crop",
-      isChoice: true
-    },
-    {
-      id: "ml7",
-      name: "Smart Drink Self-Heating Mug with Coaster Set",
-      price: 15.99,
-      originalPrice: 35.00,
-      discount: 54,
-      rating: 4.7,
-      reviews: 215,
-      image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop",
-      isChoice: true
-    },
-    {
-      id: "ml8",
-      name: "Universal Camera Lens Kit for Smartphones 10-in-1",
-      price: 8.99,
-      originalPrice: 24.99,
-      discount: 64,
-      rating: 4.4,
-      reviews: 730,
-      image: "https://images.unsplash.com/photo-1617005082133-548c4dd27f35?q=80&w=600&auto=format&fit=crop",
-      isFreeShipping: true
     }
   ];
 
@@ -455,7 +332,7 @@ export default function Home() {
               <span>Categories</span>
             </h3>
             <ul className="space-y-0.5">
-              {categoriesList.map((cat) => (
+              {dbCategories.map((cat) => (
                 <li
                   key={cat.id}
                   onMouseEnter={() => setHoverCategory(cat.id)}
@@ -463,7 +340,7 @@ export default function Home() {
                   className="relative"
                 >
                   <button className="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-zinc-700 hover:text-[#FF4747] hover:bg-red-50/50 flex items-center justify-between transition-all cursor-pointer">
-                    <span>{cat.label}</span>
+                    <span>{cat.name}</span>
                     <ChevronRight className="w-3.5 h-3.5 opacity-60" />
                   </button>
 
@@ -478,23 +355,20 @@ export default function Home() {
                       >
                         <div>
                           <h4 className="font-bold text-sm text-zinc-900 border-b border-zinc-100 pb-2 mb-3">
-                            Popular in {cat.label}
+                            Popular in {cat.name}
                           </h4>
                           <div className="grid grid-cols-1 gap-2">
-                            {cat.sub.map((subItem) => (
-                              <Link
-                                key={subItem}
-                                href={`/buyer/catalog?search=${encodeURIComponent(subItem)}`}
-                                className="text-xs text-zinc-600 hover:text-[#FF4747] hover:underline"
-                              >
-                                {subItem}
-                              </Link>
-                            ))}
+                            <Link
+                              href={`/buyer/catalog?category=${cat.id}`}
+                              className="text-xs text-zinc-600 hover:text-[#FF4747] hover:underline"
+                            >
+                              View all in {cat.name}
+                            </Link>
                           </div>
                         </div>
                         <div className="bg-red-50 p-3 rounded-xl border border-red-100 text-center">
                           <p className="text-[10px] text-red-700 font-bold uppercase tracking-widest">Limited promotion</p>
-                          <p className="text-xs text-zinc-700 font-semibold mt-1">Get up to 60% OFF select {cat.label} items</p>
+                          <p className="text-xs text-zinc-700 font-semibold mt-1">Get up to 60% OFF select {cat.name} items</p>
                           <Link href="/buyer/catalog" className="inline-block mt-2.5 text-[10px] text-white font-bold bg-[#FF4747] px-3.5 py-1 rounded-full hover:bg-red-600">
                             Explore Catalog
                           </Link>

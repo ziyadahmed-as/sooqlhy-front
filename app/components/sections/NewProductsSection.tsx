@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useApprovedProducts } from '@/app/lib/hooks/useApprovedProducts';
-import ProductCard from '@/components/ProductCard';
+import ProductCard from '@/components/shared/ProductCard';
 
 /**
  * Section displaying newest approved products.

@@ -31,20 +31,18 @@ export interface User {
   role: UserRole;
   /** Indicates whether the user's KYC verification is complete */
   is_verified: boolean;
-  [key: string]: any;
 }
 
 export interface Product {
   id: string;
   title?: string; // product name used in some UI
   name?: string;  // product name used in some UI
-  images: any; // array of image URLs or objects
+  images: string[] | { url: string; alt?: string }[];
   price: number;
   avg_rating?: number; // average rating 0-5
-  vendor?: any;
+  vendor?: Vendor | string;
   status?: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "ARCHIVED";
   rejection_reason?: string;
-  [key: string]: any;
 }
 // Category definition for product filtering
 export interface Category {
