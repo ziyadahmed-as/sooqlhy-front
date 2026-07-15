@@ -30,6 +30,12 @@ const registerSchema = z
     store_name: z.string().optional(),
     license_number: z.string().optional(),
     vehicle_type: z.string().optional(),
+    // Delivery address (buyer only)
+    street_address: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    country: z.string().optional(),
+    postal_code: z.string().optional(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     path: ["confirmPassword"],
@@ -167,6 +173,20 @@ function RegisterForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
       await storeRegister(payload);
       const { user } = useAuthStore.getState();
       if (user) {
+        // Save delivery address for buyers if provided
+        if (data.role === "BUYER" && data.street_address && data.city && data.country) {
+          try {
+            await api.post("/api/users/addresses/", {
+              street_address: data.street_address,
+              city: data.city,
+              state: data.state || data.city,
+              country: data.country,
+              postal_code: data.postal_code || "",
+              address_type: "HOME",
+              is_default: true,
+            });
+          } catch { /* address save is non-fatal */ }
+        }
         toast.success("Account created! Welcome to Sooqly.");
         closeAuthModal();
         const map: Record<string, string> = {
@@ -226,6 +246,25 @@ function RegisterForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
             </select>
           </div>
         </>
+      )}
+      {role === "BUYER" && (
+        <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery Address (optional)</p>
+          <TxtInput id="r-street" label="Street Address" placeholder="123 Main St"
+            error={errors.street_address?.message} {...register("street_address")} />
+          <div className="grid grid-cols-2 gap-2">
+            <TxtInput id="r-city" label="City" placeholder="Addis Ababa"
+              error={errors.city?.message} {...register("city")} />
+            <TxtInput id="r-state" label="Region/State" placeholder="Addis Ababa"
+              error={errors.state?.message} {...register("state")} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <TxtInput id="r-country" label="Country" placeholder="Ethiopia"
+              error={errors.country?.message} {...register("country")} />
+            <TxtInput id="r-postal" label="Postal Code (opt.)" placeholder="1000"
+              error={errors.postal_code?.message} {...register("postal_code")} />
+          </div>
+        </div>
       )}
 
       <PwdInput id="r-pwd" label="Password" autoComplete="new-password"

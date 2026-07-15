@@ -47,7 +47,7 @@ export default function CartPage() {
           description="Add some products to get started."
           icon={<ShoppingBag className="h-12 w-12" />}
           action={
-            <Link href="/buyer/catalog" className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium">
+            <Link href="/buyer/catalog" className="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-trust transition-colors">
               Browse Catalog
             </Link>
           }
@@ -133,7 +133,7 @@ export default function CartPage() {
           </div>
           <button
             onClick={handleCheckout}
-            className="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg py-3 transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-navy hover:bg-trust text-white text-sm font-semibold rounded-lg py-3 transition-colors"
           >
             Proceed to Checkout <ArrowRight className="h-4 w-4" />
           </button>
