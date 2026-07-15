@@ -1,16 +1,32 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { fetchVendorAnalytics, exportVendorAnalytics } from '@/lib/api/vendor';
+import { fetchVendorAnalytics, exportVendorAnalytics } from '@/lib/api/analytics';
 import type { AnalyticsData } from '@/lib/types';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { 
-  Download, FileText, ShoppingBag, DollarSign, 
+import {
+  Download, FileText, ShoppingBag, DollarSign,
   TrendingUp, Star, Truck, AlertTriangle, ArrowUpRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SkeletonMetricCard } from '@/components/shared/SkeletonCard';
+import { ErrorState } from '@/components/shared/ErrorState';
+
+function MetricCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white px-4 pb-5 pt-5 shadow-sm sm:px-6 sm:pt-6 dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md hover:-translate-y-1">
+      <dt>
+        <div className="absolute rounded-md bg-gray-50 dark:bg-gray-800 p-3">{icon}</div>
+        <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+      </dt>
+      <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
+        <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
+      </dd>
+    </div>
+  );
+}
 
 const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -42,14 +58,16 @@ export default function AnalyticsDashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonMetricCard key={i} />)}
+        </div>
       </div>
     );
   }
 
   if (!data) {
-    return <div className="text-center text-gray-500">No analytics data available.</div>;
+    return <ErrorState message="No analytics data available." />;
   }
 
   const pieData = Object.entries(data.rating_distribution).map(([rating, count]) => ({
@@ -201,22 +219,6 @@ export default function AnalyticsDashboard() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MetricCard({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) {
-  return (
-    <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white px-4 pb-5 pt-5 shadow-sm sm:px-6 sm:pt-6 dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md hover:-translate-y-1">
-      <dt>
-        <div className="absolute rounded-md bg-gray-50 dark:bg-gray-800 p-3">
-          {icon}
-        </div>
-        <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-      </dt>
-      <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-        <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
-      </dd>
     </div>
   );
 }

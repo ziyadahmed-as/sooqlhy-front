@@ -1,28 +1,33 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
+import { Toaster } from "sonner";
+import AuthModal from "@/components/auth/AuthModal";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Sooqly - Premium E-commerce",
-  description: "Next-generation multi-vendor e-commerce platform.",
+  title: { default: "Sooqly — Premium Multi-Vendor Marketplace", template: "%s | Sooqly" },
+  description: "Discover millions of products from verified vendors. Secure payments, fast delivery, buyer protection.",
+  keywords: ["ecommerce", "marketplace", "shopping", "vendors", "deals"],
+  openGraph: {
+    title: "Sooqly — Premium Multi-Vendor Marketplace",
+    description: "Discover millions of products from verified vendors.",
+    type: "website",
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
-        <Navbar />
+    <html lang="en" className={`${inter.variable} scroll-smooth`}>
+      <body className="min-h-full flex flex-col bg-surface text-navy antialiased">
         {children}
+        <AuthModal />
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

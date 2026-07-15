@@ -1,38 +1,33 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { fetchModerationQueue, approveProduct, rejectProduct, bulkApproveProducts } from '@/lib/api/moderator';
 import type { Product } from '@/lib/types';
 import ProductCard from '@/components/shared/ProductCard';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { SkeletonCard } from '@/components/shared/SkeletonCard';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { toast } from 'sonner';
-
-// Simple status color helper (same as vendor page)
-const getStatusColor = (status?: string) => {
-  switch (status) {
-    case 'APPROVED': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
-    case 'REJECTED': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
-    case 'UNDER_REVIEW': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
-    case 'SUBMITTED': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800';
-    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700'; // DRAFT
-  }
-};
 
 export default function ModeratorProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadQueue = async () => {
+  const loadQueue = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchModerationQueue();
       setProducts(data);
-    } catch (e) {
-      console.error(e);
+    } catch (e: unknown) {
+      setError((e as any)?.message || 'Failed to load moderation queue');
       toast.error('Failed to load moderation queue');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadQueue();
@@ -99,15 +94,19 @@ export default function ModeratorProductsPage() {
         </button>
       </div>
       {loading ? (
-        <p className="text-gray-500">Loading...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : error ? (
+        <ErrorState message={error} onRetry={loadQueue} />
       ) : products.length === 0 ? (
-        <p className="text-gray-500">No products awaiting review.</p>
+        <EmptyState title="No products awaiting review" description="The moderation queue is empty." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {products.map(p => (
             <div key={p.id} className="relative group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden hover:shadow-md transition-all">
               <div className="absolute top-2 left-2 z-10">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(p.status)} shadow-sm`}></span>
+                <StatusBadge status={p.status || 'SUBMITTED'} />
               </div>
               <div className="absolute top-2 right-2 z-10 flex space-x-2 opacity-0 group:hover:opacity-100 transition-opacity">
                 <input

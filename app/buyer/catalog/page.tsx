@@ -5,8 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { fetchCatalog, fetchCategories } from "@/lib/api/catalog";
 import { Product, Category } from "@/lib/types";
 import ProductCard from "@/components/shared/ProductCard";
+import { SkeletonCard } from "@/components/shared/SkeletonCard";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { Pagination } from "@/components/shared/Pagination";
 import styles from "@/styles/catalog.module.css";
-import Head from "next/head";
 
 
 function CatalogContent() {
@@ -24,6 +27,7 @@ function CatalogContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load categories once
   useEffect(() => {
@@ -58,13 +62,18 @@ function CatalogContent() {
   // Fetch products whenever search params (or page) change
   useEffect(() => {
     setLoading(true);
+    setError(null);
     (async () => {
-      const data = await fetchCatalog(buildParams());
-      setProducts(data.results);
-      setTotal(data.count);
-      setLoading(false);
+      try {
+        const data = await fetchCatalog(buildParams());
+        setProducts(data.results);
+        setTotal(data.count);
+      } catch (err: unknown) {
+        setError((err as any)?.message || 'Failed to load products');
+      } finally {
+        setLoading(false);
+      }
     })();
-    // Update URL to reflect current filters
     syncUrl();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, minPrice, maxPrice, rating, page]);
@@ -147,31 +156,33 @@ function CatalogContent() {
         </div>
         <div className={styles.grid}>
           {loading ? (
-            <p className="col-span-full text-center">Loading…</p>
+            <div className="col-span-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-gray-200 bg-white overflow-hidden animate-pulse">
+                  <div className="h-48 bg-gray-200" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-3 bg-gray-200 rounded w-3/4" />
+                    <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="col-span-full">
+              <ErrorState message={error} />
+            </div>
           ) : products.length === 0 ? (
-            <p className="col-span-full text-center">No products match your filters.</p>
+            <div className="col-span-full">
+              <EmptyState title="No products found" description="Try adjusting your filters." />
+            </div>
           ) : (
             products.map((p) => <ProductCard key={p.id} product={p} />)
           )}
         </div>
       </div>
       {/* Pagination */}
-      <div className={styles.pagination}>
-        <button
-          className={styles.pageBtn}
-          onClick={() => setPage((p) => Math.max(p - 1, 1))}
-          disabled={page <= 1}
-        >
-          Previous
-        </button>
-        <span className="text-white">Page {page} of {totalPages}</span>
-        <button
-          className={styles.pageBtn}
-          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-          disabled={page >= totalPages}
-        >
-          Next
-        </button>
+      <div className="flex justify-center py-4">
+        <Pagination page={page} totalPages={Math.max(1, Math.ceil(total / 12))} onPageChange={setPage} />
       </div>
     </>
   );
