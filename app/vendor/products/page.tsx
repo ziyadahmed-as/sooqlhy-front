@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
-import { VendorGuard } from "@/components/layout/VendorGuard";
 import {
   fetchVendorProducts,
   deleteVendorProduct,
@@ -533,9 +532,5 @@ function VendorProductsContent() {
 }
 
 export default function VendorProductsPage() {
-  return (
-    <VendorGuard>
-      <VendorProductsContent />
-    </VendorGuard>
-  );
+  return <VendorProductsContent />;
 }
