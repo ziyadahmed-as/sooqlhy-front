@@ -48,8 +48,9 @@ api.interceptors.response.use(
           { headers: { 'Content-Type': 'application/json' } }
         );
         const newAccess = refreshResponse.data.access;
-        // Update store
+        // Update store and cookie (middleware reads the cookie for route protection)
         useAuthStore.getState().setTokens(newAccess, refreshToken);
+        Cookies.set('access_token', newAccess, { secure: true, sameSite: 'strict' });
         // Set new header and retry original request
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);

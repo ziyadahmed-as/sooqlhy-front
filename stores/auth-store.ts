@@ -30,6 +30,7 @@ type AuthState = {
   clearAuth: () => void;
   setUser: (user: User | null) => void;
   setTokens: (accessToken: string | null, refreshToken: string | null) => void;
+  refreshUser: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -54,6 +55,7 @@ export const useAuthStore = create<AuthState>()(
             error: (err as any)?.response?.data?.detail || 'Invalid email or password',
             loading: false,
           });
+          throw err;
         }
       },
 
@@ -132,6 +134,16 @@ export const useAuthStore = create<AuthState>()(
 
       setTokens(accessToken: string | null, refreshToken: string | null) {
         set({ accessToken, refreshToken });
+      },
+
+      /** Re-fetch /api/users/auth/me/ and update local user state (e.g. after KYC approval). */
+      async refreshUser() {
+        try {
+          const { data } = await api.get('/api/users/auth/me/');
+          set({ user: data });
+        } catch {
+          // silently ignore – caller can handle if needed
+        }
       },
     }),
     {
