@@ -3,371 +3,304 @@ import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
-import { useAuthStore } from "@/stores/auth-store";
+import { X, Eye, EyeOff, Loader2, CheckCircle, User, Store, Truck } from "lucide-react";
+import { useAuthStore, type RegisterPayload } from "@/stores/auth-store";
 import { useUIStore, type AuthModalMode } from "@/stores/ui-store";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/axios";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
-// ─── Schemas ────────────────────────────────────────────────────────────────
+// ─── Schemas ─────────────────────────────────────────────────────────────────
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "At least 6 characters"),
 });
 
-const registerSchema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(6, "At least 6 characters"),
-  confirmPassword: z.string(),
-}).refine((d) => d.password === d.confirmPassword, {
-  path: ["confirmPassword"],
-  message: "Passwords do not match",
-});
+const registerSchema = z
+  .object({
+    role: z.enum(["BUYER", "VENDOR", "DRIVER"]),
+    first_name: z.string().min(1, "Required"),
+    last_name: z.string().min(1, "Required"),
+    username: z.string().min(3, "At least 3 characters"),
+    email: z.string().email("Invalid email"),
+    phone_number: z.string().optional(),
+    password: z.string().min(6, "At least 6 characters"),
+    confirmPassword: z.string(),
+    store_name: z.string().optional(),
+    license_number: z.string().optional(),
+    vehicle_type: z.string().optional(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
 
-const forgotSchema = z.object({
-  email: z.string().email("Invalid email"),
-});
+const forgotSchema = z.object({ email: z.string().email("Invalid email") });
 
 type LoginData = z.infer<typeof loginSchema>;
 type RegisterData = z.infer<typeof registerSchema>;
 type ForgotData = z.infer<typeof forgotSchema>;
 
-// ─── Password field helper ───────────────────────────────────────────────────
-
-function PasswordField({
-  label,
-  id,
-  registration,
-  error,
-}: {
-  label: string;
-  id: string;
-  registration: React.InputHTMLAttributes<HTMLInputElement>;
-  error?: string;
-}) {
+// ─── Helper: password input with show/hide toggle ─────────────────────────────
+function PwdInput({
+  id, label, error, ...rest
+}: { id: string; label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   const [show, setShow] = useState(false);
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-      </label>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       <div className="relative">
-        <input
-          id={id}
-          type={show ? "text" : "password"}
-          {...registration}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          aria-describedby={error ? `${id}-error` : undefined}
+        <input id={id} type={show ? "text" : "password"}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-10 text-sm focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20"
+          {...rest}
         />
-        <button
-          type="button"
-          onClick={() => setShow((v) => !v)}
+        <button type="button" onClick={() => setShow((v) => !v)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           aria-label={show ? "Hide password" : "Show password"}
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
-      {error && (
-        <p id={`${id}-error`} className="mt-1 text-xs text-red-600" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
 
-// ─── Login Form ──────────────────────────────────────────────────────────────
+function TxtInput({
+  id, label, error, ...rest
+}: { id: string; label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <input id={id}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20"
+        {...rest}
+      />
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
 
+function SubmitBtn({ loading, children }: { loading: boolean; children: React.ReactNode }) {
+  return (
+    <button type="submit" disabled={loading}
+      className="w-full flex items-center justify-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white hover:bg-trust disabled:opacity-60 transition-colors"
+    >
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+// ─── Login ────────────────────────────────────────────────────────────────────
 function LoginForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
   const { login, loading, error } = useAuthStore();
   const { closeAuthModal } = useUIStore();
   const router = useRouter();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginData>({ resolver: zodResolver(loginSchema) });
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginData>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (data: LoginData) => {
     await login(data.email, data.password);
     const { user } = useAuthStore.getState();
-    if (user) {
-      toast.success(`Welcome back, ${user.name || user.email}!`);
-      closeAuthModal();
-      const role = user.role?.toLowerCase();
-      const redirects: Record<string, string> = {
-        buyer: "/buyer/catalog",
-        vendor: "/vendor/dashboard",
-        driver: "/driver/dashboard",
-        moderator: "/moderator/kyc-review",
-        admin: "/admin/dashboard",
-      };
-      if (redirects[role]) router.push(redirects[role]);
-    }
+    if (!user) return;
+    toast.success(`Welcome back, ${user.name || user.email}!`);
+    closeAuthModal();
+    const map: Record<string, string> = {
+      buyer: "/buyer/catalog", vendor: "/vendor/dashboard",
+      driver: "/driver/dashboard", moderator: "/moderator/kyc-review", admin: "/admin/dashboard",
+    };
+    const dest = map[user.role?.toLowerCase() ?? ""];
+    if (dest) router.push(dest);
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <div>
-        <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email
-        </label>
-        <input
-          id="login-email"
-          type="email"
-          {...register("email")}
-          autoComplete="email"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          aria-describedby={errors.email ? "login-email-error" : undefined}
-        />
-        {errors.email && (
-          <p id="login-email-error" className="mt-1 text-xs text-red-600" role="alert">
-            {errors.email.message}
-          </p>
-        )}
+      <TxtInput id="login-email" label="Email address" type="email" autoComplete="email"
+        placeholder="you@example.com" error={errors.email?.message} {...register("email")} />
+      <PwdInput id="login-password" label="Password" autoComplete="current-password"
+        error={errors.password?.message} {...register("password")} />
+      <div className="flex justify-end">
+        <button type="button" onClick={() => onSwitch("forgot")} className="text-xs text-trust hover:underline">
+          Forgot password?
+        </button>
       </div>
-
-      <PasswordField
-        label="Password"
-        id="login-password"
-        registration={register("password")}
-        error={errors.password?.message}
-      />
-
-      <button
-        type="button"
-        onClick={() => onSwitch("forgot")}
-        className="text-xs text-blue-600 hover:underline"
-      >
-        Forgot password?
-      </button>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#FF4747] px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition-colors"
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        {loading ? "Signing in…" : "Sign In"}
-      </button>
-
+      {error && <p className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{error}</p>}
+      <SubmitBtn loading={loading}>{loading ? "Signing in…" : "Sign In"}</SubmitBtn>
       <p className="text-center text-sm text-gray-500">
         No account?{" "}
-        <button
-          type="button"
-          onClick={() => onSwitch("register")}
-          className="font-semibold text-[#FF4747] hover:underline"
-        >
-          Register
+        <button type="button" onClick={() => onSwitch("register")} className="font-semibold text-navy hover:underline">
+          Register free
         </button>
       </p>
     </form>
   );
 }
 
-// ─── Register Form ───────────────────────────────────────────────────────────
+// ─── Register ─────────────────────────────────────────────────────────────────
+const VEHICLE_TYPES = ["MOTORCYCLE", "CAR", "VAN", "TRUCK", "BICYCLE"];
 
 function RegisterForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
-  const { register: registerUser, loading, error } = useAuthStore();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterData>({ resolver: zodResolver(registerSchema) });
+  const { register: storeRegister, loading, error } = useAuthStore();
+  const { closeAuthModal } = useUIStore();
+  const router = useRouter();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { role: "BUYER" },
+  });
+  const role = watch("role");
 
   const onSubmit = async (data: RegisterData) => {
+    const payload: RegisterPayload = {
+      email: data.email,
+      username: data.username,
+      password: data.password,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      role: data.role,
+      phone_number: data.phone_number || undefined,
+      store_name: data.role === "VENDOR" ? data.store_name : undefined,
+      license_number: data.role === "DRIVER" ? data.license_number : undefined,
+      vehicle_type: data.role === "DRIVER" ? (data.vehicle_type || "MOTORCYCLE") : undefined,
+    };
     try {
-      await registerUser({ email: data.email, password: data.password });
-      toast.success("Account created! Please sign in.");
-      onSwitch("login");
-    } catch {
-      // error handled in store
-    }
+      await storeRegister(payload);
+      const { user } = useAuthStore.getState();
+      if (user) {
+        toast.success("Account created! Welcome to Sooqly.");
+        closeAuthModal();
+        const map: Record<string, string> = {
+          buyer: "/buyer/catalog", vendor: "/vendor/dashboard", driver: "/driver/dashboard",
+        };
+        router.push(map[user.role?.toLowerCase() ?? ""] ?? "/");
+      } else {
+        toast.success("Account created! Please sign in.");
+        onSwitch("login");
+      }
+    } catch { /* error shown from store */ }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 max-h-[62vh] overflow-y-auto pr-1" noValidate>
+      {/* Role picker */}
       <div>
-        <label htmlFor="reg-email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email
-        </label>
-        <input
-          id="reg-email"
-          type="email"
-          {...register("email")}
-          autoComplete="email"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-        />
-        {errors.email && (
-          <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-        )}
+        <p className="text-sm font-medium text-gray-700 mb-2">I want to join as</p>
+        <div className="grid grid-cols-3 gap-2">
+          {([["BUYER", <User key="u" className="w-4 h-4" />, "Buyer"],
+            ["VENDOR", <Store key="s" className="w-4 h-4" />, "Vendor"],
+            ["DRIVER", <Truck key="t" className="w-4 h-4" />, "Driver"]] as const).map(([val, icon, lbl]) => (
+            <label key={val}
+              className={`flex flex-col items-center gap-1 py-2.5 rounded-lg border-2 cursor-pointer transition-colors text-xs font-semibold ${role === val ? "border-navy bg-navy/5 text-navy" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
+            >
+              <input type="radio" value={val} {...register("role")} className="sr-only" />
+              {icon}{lbl}
+            </label>
+          ))}
+        </div>
       </div>
 
-      <PasswordField
-        label="Password"
-        id="reg-password"
-        registration={register("password")}
-        error={errors.password?.message}
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <TxtInput id="r-first" label="First Name" placeholder="John" error={errors.first_name?.message} {...register("first_name")} />
+        <TxtInput id="r-last" label="Last Name" placeholder="Doe" error={errors.last_name?.message} {...register("last_name")} />
+      </div>
+      <TxtInput id="r-user" label="Username" placeholder="johndoe" autoComplete="username"
+        error={errors.username?.message} {...register("username")} />
+      <TxtInput id="r-email" label="Email" type="email" placeholder="you@example.com"
+        autoComplete="email" error={errors.email?.message} {...register("email")} />
+      <TxtInput id="r-phone" label="Phone (optional)" type="tel" placeholder="+1 555 000 0000"
+        error={errors.phone_number?.message} {...register("phone_number")} />
 
-      <PasswordField
-        label="Confirm Password"
-        id="reg-confirm"
-        registration={register("confirmPassword")}
-        error={errors.confirmPassword?.message}
-      />
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700" role="alert">
-          {error}
-        </div>
+      {role === "VENDOR" && (
+        <TxtInput id="r-store" label="Store Name" placeholder="My Awesome Store"
+          error={errors.store_name?.message} {...register("store_name")} />
+      )}
+      {role === "DRIVER" && (
+        <>
+          <TxtInput id="r-license" label="License Number" placeholder="DL-1234567"
+            error={errors.license_number?.message} {...register("license_number")} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+            <select {...register("vehicle_type")}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy focus:outline-none">
+              {VEHICLE_TYPES.map((v) => <option key={v} value={v}>{v.charAt(0) + v.slice(1).toLowerCase()}</option>)}
+            </select>
+          </div>
+        </>
       )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#FF4747] px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition-colors"
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        {loading ? "Creating account…" : "Create Account"}
-      </button>
+      <PwdInput id="r-pwd" label="Password" autoComplete="new-password"
+        error={errors.password?.message} {...register("password")} />
+      <PwdInput id="r-confirm" label="Confirm Password" autoComplete="new-password"
+        error={errors.confirmPassword?.message} {...register("confirmPassword")} />
 
-      <p className="text-center text-sm text-gray-500">
-        Already have an account?{" "}
-        <button
-          type="button"
-          onClick={() => onSwitch("login")}
-          className="font-semibold text-[#FF4747] hover:underline"
-        >
-          Sign in
-        </button>
+      {error && <p className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 break-words">{error}</p>}
+      <SubmitBtn loading={loading}>{loading ? "Creating account…" : "Create Account"}</SubmitBtn>
+      <p className="text-center text-sm text-gray-500 pb-1">
+        Already registered?{" "}
+        <button type="button" onClick={() => onSwitch("login")} className="font-semibold text-navy hover:underline">Sign in</button>
       </p>
     </form>
   );
 }
 
-// ─── Forgot Password Form ────────────────────────────────────────────────────
-
+// ─── Forgot Password ──────────────────────────────────────────────────────────
 function ForgotForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ForgotData>({ resolver: zodResolver(forgotSchema) });
+  const { register, handleSubmit, formState: { errors } } = useForm<ForgotData>({ resolver: zodResolver(forgotSchema) });
 
   const onSubmit = async (data: ForgotData) => {
     setLoading(true);
     try {
-      await api.post("/api/users/password-reset/", { email: data.email });
+      await api.post("/api/users/auth/password-reset/", { email: data.email });
       setSent(true);
-    } catch {
-      toast.error("Failed to send reset email. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to send reset email. Please try again."); }
+    finally { setLoading(false); }
   };
 
   if (sent) {
     return (
-      <div className="text-center py-4 space-y-3">
-        <CheckCircle className="h-10 w-10 text-green-500 mx-auto" />
-        <p className="text-sm text-gray-700">Reset link sent — check your inbox.</p>
-        <button
-          onClick={() => onSwitch("login")}
-          className="text-sm font-semibold text-[#FF4747] hover:underline"
-        >
-          Back to sign in
-        </button>
+      <div className="text-center py-6 space-y-4">
+        <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+        <p className="text-sm text-gray-700 font-medium">Reset link sent — check your inbox.</p>
+        <button onClick={() => onSwitch("login")} className="text-sm font-semibold text-navy hover:underline">← Back to sign in</button>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <p className="text-sm text-gray-500">Enter your email and we'll send a reset link.</p>
-      <div>
-        <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email
-        </label>
-        <input
-          id="forgot-email"
-          type="email"
-          {...register("email")}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-        />
-        {errors.email && (
-          <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-        )}
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#FF4747] px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition-colors"
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        {loading ? "Sending…" : "Send Reset Link"}
-      </button>
-
-      <p className="text-center text-sm">
-        <button
-          type="button"
-          onClick={() => onSwitch("login")}
-          className="text-[#FF4747] hover:underline font-medium"
-        >
-          ← Back to sign in
-        </button>
+      <p className="text-sm text-gray-500">Enter your email and we'll send you a password reset link.</p>
+      <TxtInput id="forgot-email" label="Email address" type="email" placeholder="you@example.com"
+        autoComplete="email" error={errors.email?.message} {...register("email")} />
+      <SubmitBtn loading={loading}>{loading ? "Sending…" : "Send Reset Link"}</SubmitBtn>
+      <p className="text-center">
+        <button type="button" onClick={() => onSwitch("login")} className="text-sm text-navy font-medium hover:underline">← Back to sign in</button>
       </p>
     </form>
   );
 }
 
-// ─── Modal Shell ─────────────────────────────────────────────────────────────
-
-const titles: Record<NonNullable<AuthModalMode>, string> = {
-  login: "Sign In",
-  register: "Create Account",
-  forgot: "Reset Password",
+// ─── Modal Shell ──────────────────────────────────────────────────────────────
+const TITLES: Record<NonNullable<AuthModalMode>, string> = {
+  login: "Sign In to Sooqly",
+  register: "Create Your Account",
+  forgot: "Reset Your Password",
 };
 
 export default function AuthModal() {
   const { authModal, closeAuthModal, openAuthModal } = useUIStore();
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeAuthModal();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") closeAuthModal(); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
   }, [closeAuthModal]);
 
-  // Trap scroll
   useEffect(() => {
-    if (authModal) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    document.body.style.overflow = authModal ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
   }, [authModal]);
 
   if (!authModal) return null;
@@ -375,33 +308,28 @@ export default function AuthModal() {
   return (
     <div
       ref={overlayRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={titles[authModal]}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === overlayRef.current) closeAuthModal();
-      }}
+      role="dialog" aria-modal="true" aria-label={TITLES[authModal]}
+      onClick={(e) => { if (e.target === overlayRef.current) closeAuthModal(); }}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
-
-      {/* Panel */}
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">{titles[authModal]}</h2>
-          <button
-            onClick={closeAuthModal}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            aria-label="Close"
-          >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">{TITLES[authModal]}</h2>
+            {authModal === "register" && (
+              <p className="text-xs text-gray-400 mt-0.5">All fields are required unless marked optional</p>
+            )}
+          </div>
+          <button onClick={closeAuthModal}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700 transition-colors"
+            aria-label="Close">
             <X className="h-5 w-5" />
           </button>
         </div>
-
         {/* Body */}
-        <div className="px-6 py-6">
+        <div className="px-6 py-5">
           {authModal === "login" && <LoginForm onSwitch={openAuthModal} />}
           {authModal === "register" && <RegisterForm onSwitch={openAuthModal} />}
           {authModal === "forgot" && <ForgotForm onSwitch={openAuthModal} />}
