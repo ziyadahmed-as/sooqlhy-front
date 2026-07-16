@@ -52,7 +52,7 @@ export default function BuyerOrdersPage() {
   const stats = {
     total: orders.length,
     pending: orders.filter((o) => o.status === "PENDING" || o.status === "PROCESSING").length,
-    delivered: orders.filter((o) => o.status === "DELIVERED" || o.status === "COMPLETED").length,
+    delivered: orders.filter((o) => o.status === "DELIVERED" || (o.status as string) === "COMPLETED").length,
   };
 
   return (

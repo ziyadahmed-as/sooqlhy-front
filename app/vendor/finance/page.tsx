@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   DollarSign, ArrowDownCircle, TrendingUp, RefreshCw,
-  CreditCard, Clock, CheckCircle, XCircle, Wallet,
+  CreditCard, Clock, CheckCircle, XCircle, Wallet as WalletIcon,
 } from "lucide-react";
 import { fetchWallets, fetchTransactions, fetchWithdrawals, requestWithdrawal } from "@/lib/api/finance";
 import { fetchVendorAnalytics } from "@/lib/api/analytics";
@@ -90,7 +90,7 @@ export default function VendorFinancePage() {
 
       {/* ── Revenue KPIs ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <DashboardCard title="Available Balance" value={`$${totalBalance.toFixed(2)}`} icon={<Wallet className="w-5 h-5" />} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-600" loading={loading} />
+        <DashboardCard title="Available Balance" value={`$${totalBalance.toFixed(2)}`} icon={<WalletIcon className="w-5 h-5" />} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-600" loading={loading} />
         <DashboardCard title="Revenue Today" value={`$${Number(analytics?.revenue_today ?? 0).toFixed(2)}`} icon={<DollarSign className="w-5 h-5" />} iconBg="bg-emerald-50 dark:bg-emerald-900/20" iconColor="text-emerald-600" loading={loading} />
         <DashboardCard title="This Month" value={`$${Number(analytics?.revenue_month ?? 0).toFixed(2)}`} icon={<TrendingUp className="w-5 h-5" />} iconBg="bg-violet-50 dark:bg-violet-900/20" iconColor="text-violet-600" loading={loading} />
         <DashboardCard title="This Year" value={`$${Number(analytics?.revenue_year ?? 0).toFixed(2)}`} icon={<CreditCard className="w-5 h-5" />} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-600" loading={loading} />

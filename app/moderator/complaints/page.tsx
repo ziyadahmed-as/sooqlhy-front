@@ -234,6 +234,14 @@ function ComplaintDetailDrawer({ complaint, onClose, onRefresh }: {
 }
 
 export default function ModeratorComplaintsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-gray-400">Loading...</div>}>
+      <ComplaintsContent />
+    </Suspense>
+  );
+}
+
+function ComplaintsContent() {
   const sp = useSearchParams();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [stats, setStats] = useState<ComplaintStats | null>(null);

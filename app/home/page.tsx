@@ -37,7 +37,7 @@ function ProductCard({ product }: { product: Product }) {
         style={{
           height: 200,
           background: product.images?.[0]
-            ? `url(${product.images[0].image}) center/cover`
+            ? `url(${typeof product.images[0] === "string" ? product.images[0] : (product.images[0] as any).image ?? ""}) center/cover`
             : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           display: "flex",
           alignItems: "flex-end",
@@ -71,9 +71,9 @@ function ProductCard({ product }: { product: Product }) {
         </h3>
 
         {/* Rating */}
-        {product.average_rating > 0 && (
+        {(product.average_rating ?? 0) > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "#f4a92a" }}>
-            {"★".repeat(Math.round(product.average_rating))}
+            {"★".repeat(Math.round(product.average_rating ?? 0))}
             <span style={{ color: "#999", marginLeft: 4 }}>
               ({product.total_reviews})
             </span>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { fetchWallets, requestWithdrawal, Wallet } from '@/lib/api/finance';
+import { fetchWallets, requestWithdrawal } from '@/lib/api/finance';
+import type { Wallet } from '@/lib/types';
 
 export const WalletCard: React.FC = () => {
   const [wallets, setWallets] = useState<Wallet[]>([]);

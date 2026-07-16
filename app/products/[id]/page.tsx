@@ -246,7 +246,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const inStock = product.stock > 0;
+  const inStock = (product.stock ?? 0) > 0;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8f9fc" }}>
@@ -273,7 +273,7 @@ export default function ProductDetailPage() {
         }}
       >
         {/* Left — Gallery */}
-        <ImageGallery images={product.images || []} />
+        <ImageGallery images={(product.images || []) as any} />
 
         {/* Right — Info */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -302,7 +302,7 @@ export default function ProductDetailPage() {
 
           {/* Vendor */}
           <p style={{ fontSize: 14, color: "#666", margin: 0 }}>
-            Sold by <span style={{ fontWeight: 600, color: "#1a5fa8" }}>{product.vendor || "Sooqly Vendor"}</span>
+            Sold by <span style={{ fontWeight: 600, color: "#1a5fa8" }}>{typeof product.vendor === "string" ? product.vendor : (product.vendor as any)?.name ?? "Sooqly Vendor"}</span>
           </p>
 
           {/* Rating */}
@@ -442,7 +442,7 @@ export default function ProductDetailPage() {
           {/* Meta info */}
           <div style={{ display: "flex", gap: 24, fontSize: 13, color: "#888" }}>
             <span>📦 {product.is_digital ? "Digital Delivery" : "Physical Product"}</span>
-            <span>📅 Added {new Date(product.created_at).toLocaleDateString()}</span>
+            <span>📅 Added {product.created_at ? new Date(product.created_at).toLocaleDateString() : "—"}</span>
           </div>
         </div>
       </div>

@@ -231,7 +231,7 @@ export const fetchModeratorDrivers = async (
 export const fetchModeratorOrders = async (
   params?: Record<string, string | number>
 ): Promise<PaginatedResponse<any>> => {
-  const { data } = await api.get('/api/orders/my-orders/', { params });
+  const { data } = await api.get('/api/orders/moderator/orders/', { params });
   if (Array.isArray(data)) return { count: data.length, next: null, previous: null, results: data };
   return data;
 };
