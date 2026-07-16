@@ -344,6 +344,17 @@ export interface DriverAssignment {
   tracking_number?: string;
 }
 
+// Delivery status values used in the driver workflow
+export type DriverDeliveryStatus =
+  | 'TRAVELING_TO_VENDOR'
+  | 'PICKED_UP'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'DELIVERY_FAILED'
+  | 'CANCELLED';
+
+export type DriverAvailabilityStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE' | 'RESTING';
+
 // ─── KYC ─────────────────────────────────────────────────────────────────────
 
 export type KycStatus = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";

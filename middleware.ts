@@ -113,6 +113,17 @@ const middleware: NextMiddleware = (request: NextRequest) => {
     ) {
       return redirectTo(request, '/auth/kyc');
     }
+
+    // 5. KYC gate for driver routes
+    //    Drivers must be verified to access dashboard features beyond /driver/kyc
+    if (
+      requiredRole === 'DRIVER' &&
+      payload.is_verified === false &&
+      !pathname.startsWith('/driver/kyc') &&
+      !pathname.startsWith('/auth/kyc')
+    ) {
+      return redirectTo(request, '/driver/kyc');
+    }
   }
 
   // 5. All checks passed
