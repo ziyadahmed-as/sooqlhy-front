@@ -18,8 +18,9 @@ export default function EarningsHistoryPage() {
     setLoading(true);
     try {
       const res = await fetchEarningsHistory({ page, page_size: PAGE_SIZE });
-      setTransactions(Array.isArray(res) ? res : res.results ?? []);
-      setCount(typeof (res as any).count === "number" ? (res as any).count : (res as any[]).length ?? 0);
+      const results = Array.isArray(res) ? res : (res as any).results ?? [];
+      setTransactions(results);
+      setCount(typeof (res as any).count === "number" ? (res as any).count : results.length);
     } catch {
       setTransactions([]);
     } finally {
