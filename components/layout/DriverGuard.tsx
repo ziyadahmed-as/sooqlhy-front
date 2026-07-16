@@ -145,6 +145,11 @@ export const DriverGuard: React.FC<{ children: React.ReactNode }> = ({ children 
         setGuardState("wrong_role");
         return;
       }
+      // Suspended = account deactivated by admin
+      if (user.is_active === false) {
+        setGuardState("suspended");
+        return;
+      }
       if (user.is_verified) {
         setGuardState("ok");
         return;

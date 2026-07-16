@@ -27,6 +27,7 @@ export interface User {
   name?: string;
   role: UserRole;
   is_verified: boolean;
+  is_active?: boolean;
 }
 
 // ─── Pagination ──────────────────────────────────────────────────────────────
