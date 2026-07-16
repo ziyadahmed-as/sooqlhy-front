@@ -1,203 +1,228 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { fetchAdminStats, fetchUsers, fetchKycRecords } from '@/lib/api/admin';
-import { fetchDailyAnalytics } from '@/lib/api/analytics';
-import type { AdminStats, User, KycRecord, DailyAnalytics } from '@/lib/types';
-import { SkeletonMetricCard } from '@/components/shared/SkeletonCard';
-import { ErrorState } from '@/components/shared/ErrorState';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
-  Users, ShoppingBag, Store, TrendingUp,
-  AlertCircle, CheckCircle, BarChart2
-} from 'lucide-react';
+  Users, Store, Truck, ShieldCheck, Package, ShoppingBag,
+  DollarSign, TrendingUp, MessageSquare, AlertTriangle,
+  CheckCircle, Clock, XCircle, Activity, RefreshCw,
+  Shield, BarChart2, FileText, Zap,
+} from "lucide-react";
+import { useAuthStore } from "@/stores/auth-store";
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
+  fetchAdminStats, fetchAdminRevenueStats, fetchKycRecords,
+  fetchAdminComplaints, fetchFinanceSummary,
+  type FullAdminStats, type RevenuePoint,
+} from "@/lib/api/admin";
+import { DashboardCard } from "@/components/vendor/DashboardCard";
+import { AdminPageWrapper } from "@/components/admin/AdminPageWrapper";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { cn } from "@/lib/utils";
 
-function StatCard({ title, value, icon, color }: {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color: string;
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-      <div className={`absolute right-4 top-4 rounded-lg p-2 ${color}`}>
-        {icon}
-      </div>
-      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-      <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-        {value ?? '—'}
-      </p>
-    </div>
-  );
-}
+const RevenueChart = dynamic(
+  () => import("recharts").then((m) => {
+    const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = m;
+    return function Chart({ data }: { data: RevenuePoint[] }) {
+      return (
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#475569" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#475569" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+            <XAxis dataKey="period" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <Tooltip formatter={((v: number) => [`$${v.toFixed(2)}`, "Revenue"]) as any} />
+            <Area type="monotone" dataKey="revenue" stroke="#475569" fill="url(#rev)" strokeWidth={2} />
+          </AreaChart>
+        </ResponsiveContainer>
+      );
+    };
+  }),
+  { ssr: false, loading: () => <div className="h-48 flex items-center justify-center"><div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /></div> }
+);
 
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [recentUsers, setRecentUsers] = useState<User[]>([]);
-  const [pendingKyc, setPendingKyc] = useState<KycRecord[]>([]);
-  const [dailyAnalytics, setDailyAnalytics] = useState<DailyAnalytics[]>([]);
+export default function AdminDashboardPage() {
+  const { user } = useAuthStore();
+  const [stats, setStats] = useState<FullAdminStats | null>(null);
+  const [revenue, setRevenue] = useState<RevenuePoint[]>([]);
+  const [pendingKyc, setPendingKyc] = useState<any[]>([]);
+  const [recentComplaints, setRecentComplaints] = useState<any[]>([]);
+  const [financeSummary, setFinanceSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "yearly">("monthly");
 
-  const loadData = async () => {
+  const name = user
+    ? `${(user as any).first_name ?? ""} ${(user as any).last_name ?? ""}`.trim() || user.email?.split("@")[0]
+    : "Admin";
+
+  const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      const [statsData, usersData, kycData, analyticsData] = await Promise.allSettled([
+      const [s, r, kyc, comp, fin] = await Promise.allSettled([
         fetchAdminStats(),
-        fetchUsers({ page: 1, page_size: 5 }),
-        fetchKycRecords({ status: 'PENDING', page: 1, page_size: 5 }),
-        fetchDailyAnalytics(),
+        fetchAdminRevenueStats(period),
+        fetchKycRecords({ status: "PENDING", page: 1, page_size: 5 }),
+        fetchAdminComplaints({ status: "NEW", page: 1, page_size: 5 }),
+        fetchFinanceSummary(),
       ]);
-
-      if (statsData.status === 'fulfilled') setStats(statsData.value);
-      if (usersData.status === 'fulfilled') setRecentUsers(usersData.value.results);
-      if (kycData.status === 'fulfilled') setPendingKyc(kycData.value.results);
-      if (analyticsData.status === 'fulfilled') setDailyAnalytics(analyticsData.value.slice(-14));
-    } catch (err: unknown) {
-      setError((err as any)?.message || 'Failed to load dashboard data');
+      if (s.status === "fulfilled") setStats(s.value);
+      if (r.status === "fulfilled") setRevenue(r.value.data ?? []);
+      if (kyc.status === "fulfilled") setPendingKyc(kyc.value.results);
+      if (comp.status === "fulfilled") setRecentComplaints(comp.value.results);
+      if (fin.status === "fulfilled") setFinanceSummary(fin.value);
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { load(); }, [load]);
 
-  if (error) return <div className="p-6"><ErrorState message={error} onRetry={loadData} /></div>;
+  const isSuperAdmin = (user?.role ?? "").toUpperCase() === "SUPER_ADMIN";
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-        <button onClick={loadData} className="text-sm text-primary-600 hover:underline">Refresh</button>
+    <AdminPageWrapper
+      title={`Welcome back, ${name} ${isSuperAdmin ? "⚡" : "👋"}`}
+      subtitle="Marketplace operations overview — real-time."
+      actions={
+        <div className="flex items-center gap-2">
+          {(stats?.pending_kyc ?? 0) > 0 && (
+            <Link href="/admin/kyc" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 transition-colors">
+              <ShieldCheck className="w-3.5 h-3.5" />{stats!.pending_kyc} KYC pending
+            </Link>
+          )}
+          <button onClick={load} disabled={loading} className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50">
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+          </button>
+        </div>
+      }
+    >
+      {/* Users */}
+      <div>
+        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Marketplace Users</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <DashboardCard title="Total Users" value={stats?.total_users ?? 0} icon={<Users className="w-5 h-5" />} iconBg="bg-slate-100 dark:bg-slate-900/40" iconColor="text-slate-700 dark:text-slate-300" href="/admin/users" loading={loading} />
+          <DashboardCard title="Vendors" value={stats?.total_vendors ?? 0} icon={<Store className="w-5 h-5" />} iconBg="bg-violet-50 dark:bg-violet-900/20" iconColor="text-violet-600" href="/admin/users?role=VENDOR" loading={loading} />
+          <DashboardCard title="Drivers" value={stats?.total_drivers ?? 0} icon={<Truck className="w-5 h-5" />} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-600" href="/admin/users?role=DRIVER" loading={loading} />
+          <DashboardCard title="Moderators" value={stats?.total_moderators ?? 0} icon={<ShieldCheck className="w-5 h-5" />} iconBg="bg-indigo-50 dark:bg-indigo-900/20" iconColor="text-indigo-600" href="/admin/users?role=MODERATOR" loading={loading} />
+          <DashboardCard title="Customers" value={stats?.total_buyers ?? 0} icon={<Users className="w-5 h-5" />} iconBg="bg-teal-50 dark:bg-teal-900/20" iconColor="text-teal-600" href="/admin/users?role=BUYER" loading={loading} />
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => <SkeletonMetricCard key={i} />)
-        ) : (
-          <>
-            <StatCard title="Total Users" value={stats?.total_users ?? 0} icon={<Users className="h-5 w-5 text-blue-600" />} color="bg-blue-50 dark:bg-blue-900/20" />
-            <StatCard title="Total Vendors" value={stats?.total_vendors ?? 0} icon={<Store className="h-5 w-5 text-purple-600" />} color="bg-purple-50 dark:bg-purple-900/20" />
-            <StatCard title="Total Orders" value={stats?.total_orders ?? 0} icon={<ShoppingBag className="h-5 w-5 text-green-600" />} color="bg-green-50 dark:bg-green-900/20" />
-            <StatCard title="Total Revenue" value={`$${(stats?.total_revenue ?? 0).toFixed(2)}`} icon={<TrendingUp className="h-5 w-5 text-amber-600" />} color="bg-amber-50 dark:bg-amber-900/20" />
-          </>
-        )}
+      {/* Commerce */}
+      <div>
+        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Commerce</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <DashboardCard title="Total Products" value={stats?.total_products ?? 0} icon={<Package className="w-5 h-5" />} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-600" loading={loading} />
+          <DashboardCard title="Active Products" value={stats?.active_products ?? 0} icon={<CheckCircle className="w-5 h-5" />} iconBg="bg-green-50 dark:bg-green-900/20" iconColor="text-green-600" loading={loading} />
+          <DashboardCard title="Pending Review" value={stats?.pending_moderation ?? 0} icon={<Clock className="w-5 h-5" />} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-600" href="/admin/products" alert={(stats?.pending_moderation ?? 0) > 0} loading={loading} />
+          <DashboardCard title="Total Orders" value={stats?.total_orders ?? 0} icon={<ShoppingBag className="w-5 h-5" />} iconBg="bg-purple-50 dark:bg-purple-900/20" iconColor="text-purple-600" href="/admin/orders" loading={loading} />
+          <DashboardCard title="Pending Orders" value={stats?.pending_orders ?? 0} icon={<Zap className="w-5 h-5" />} iconBg="bg-orange-50 dark:bg-orange-900/20" iconColor="text-orange-500" href="/admin/orders?status=PENDING" alert={(stats?.pending_orders ?? 0) > 0} loading={loading} />
+          <DashboardCard title="Delivered" value={stats?.delivered_orders ?? 0} icon={<CheckCircle className="w-5 h-5" />} iconBg="bg-green-50 dark:bg-green-900/20" iconColor="text-green-600" loading={loading} />
+        </div>
       </div>
 
-      {/* Secondary stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => <SkeletonMetricCard key={i} />)
-        ) : (
-          <>
-            <StatCard title="Total Buyers" value={stats?.total_buyers ?? 0} icon={<Users className="h-5 w-5 text-cyan-600" />} color="bg-cyan-50 dark:bg-cyan-900/20" />
-            <StatCard title="Drivers" value={stats?.total_drivers ?? 0} icon={<TrendingUp className="h-5 w-5 text-indigo-600" />} color="bg-indigo-50 dark:bg-indigo-900/20" />
-            <StatCard title="Pending KYC" value={stats?.pending_kyc ?? 0} icon={<AlertCircle className="h-5 w-5 text-orange-600" />} color="bg-orange-50 dark:bg-orange-900/20" />
-            <StatCard title="Pending Moderation" value={stats?.pending_moderation ?? 0} icon={<CheckCircle className="h-5 w-5 text-red-600" />} color="bg-red-50 dark:bg-red-900/20" />
-          </>
-        )}
+      {/* Finance */}
+      <div>
+        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Finance</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <DashboardCard title="Total Revenue" value={`$${Number(stats?.total_revenue ?? 0).toFixed(2)}`} icon={<DollarSign className="w-5 h-5" />} iconBg="bg-emerald-50 dark:bg-emerald-900/20" iconColor="text-emerald-600" href="/admin/finance" loading={loading} />
+          <DashboardCard title="Monthly Revenue" value={`$${Number(financeSummary?.monthly_revenue ?? 0).toFixed(2)}`} icon={<TrendingUp className="w-5 h-5" />} iconBg="bg-teal-50 dark:bg-teal-900/20" iconColor="text-teal-600" loading={loading} />
+          <DashboardCard title="Wallet Balance" value={`$${Number(financeSummary?.total_wallet_balance ?? 0).toFixed(2)}`} icon={<DollarSign className="w-5 h-5" />} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-600" loading={loading} />
+          <DashboardCard title="Pending Withdrawals" value={financeSummary?.pending_withdrawals ?? 0} icon={<Clock className="w-5 h-5" />} iconBg="bg-amber-50 dark:bg-amber-900/20" iconColor="text-amber-600" href="/admin/finance/withdrawals" alert={(financeSummary?.pending_withdrawals ?? 0) > 0} loading={loading} />
+          <DashboardCard title="Completed Payouts" value={`$${Number(financeSummary?.completed_payouts ?? 0).toFixed(2)}`} icon={<CheckCircle className="w-5 h-5" />} iconBg="bg-green-50 dark:bg-green-900/20" iconColor="text-green-600" loading={loading} />
+        </div>
       </div>
 
-      {/* Analytics Charts */}
-      {dailyAnalytics.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <BarChart2 className="h-4 w-4 text-primary-500" />
-              Daily Page Views (14 days)
+      {/* Operations + Support */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <DashboardCard title="Active Deliveries" value={stats?.active_deliveries ?? 0} icon={<Truck className="w-5 h-5" />} iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-600" href="/admin/orders?status=SHIPPED" loading={loading} />
+        <DashboardCard title="Cancelled Orders" value={stats?.cancelled_orders ?? 0} icon={<XCircle className="w-5 h-5" />} iconBg="bg-red-50 dark:bg-red-900/20" iconColor="text-red-500" loading={loading} />
+        <DashboardCard title="Open Complaints" value={stats?.open_complaints ?? 0} icon={<MessageSquare className="w-5 h-5" />} iconBg="bg-orange-50 dark:bg-orange-900/20" iconColor="text-orange-500" href="/admin/complaints" alert={(stats?.open_complaints ?? 0) > 0} loading={loading} />
+        <DashboardCard title="Escalated" value={stats?.escalated_complaints ?? 0} icon={<AlertTriangle className="w-5 h-5" />} iconBg="bg-red-50 dark:bg-red-900/20" iconColor="text-red-600" href="/admin/complaints?status=ESCALATED" alert={(stats?.escalated_complaints ?? 0) > 0} loading={loading} />
+      </div>
+
+      {/* Revenue chart + activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-slate-500" />Revenue Overview
             </h3>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailyAnalytics}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="page_views" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="flex gap-1">
+              {(["daily", "weekly", "monthly", "yearly"] as const).map((p) => (
+                <button key={p} onClick={() => setPeriod(p)}
+                  className={cn("px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors", period === p ? "bg-slate-800 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700")}>
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </button>
+              ))}
             </div>
           </div>
+          {loading ? <div className="h-48 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" /> : <RevenueChart data={revenue} />}
+        </div>
 
-          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Registrations & Conversions</h3>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyAnalytics}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="registrations" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="conversions" stroke="#10b981" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+        <div className="space-y-4">
+          {/* Pending KYC */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-amber-500" />Pending KYC</h3>
+              <Link href="/admin/kyc" className="text-xs text-slate-600 hover:text-slate-800 font-medium">View all</Link>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Recent Users & Pending KYC */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Users */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Recent Users</h3>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {loading ? (
-              <p className="p-4 text-sm text-gray-500">Loading…</p>
-            ) : recentUsers.length === 0 ? (
-              <p className="p-4 text-sm text-gray-500">No users found.</p>
-            ) : (
-              recentUsers.map((u) => (
-                <div key={u.id} className="flex items-center justify-between px-6 py-3">
+            {loading ? <div className="p-3 space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-8 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />)}</div>
+              : pendingKyc.length === 0 ? <p className="px-4 py-4 text-xs text-gray-400">No pending KYC requests</p>
+              : pendingKyc.map((k: any) => (
+                <div key={k.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{u.name || u.email}</p>
-                    <p className="text-xs text-gray-500">{u.email}</p>
+                    <p className="text-xs font-medium text-gray-900 dark:text-white">{k.user_email || `User #${k.user}`}</p>
+                    <p className="text-[10px] text-gray-400">{k.kyc_type?.replace(/_/g, " ")}</p>
                   </div>
-                  <StatusBadge status={u.role?.toUpperCase()} />
+                  <StatusBadge status={k.status} />
                 </div>
-              ))
-            )}
+              ))}
           </div>
-        </div>
 
-        {/* Pending KYC */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Pending KYC</h3>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {loading ? (
-              <p className="p-4 text-sm text-gray-500">Loading…</p>
-            ) : pendingKyc.length === 0 ? (
-              <p className="p-4 text-sm text-gray-500">No pending KYC requests.</p>
-            ) : (
-              pendingKyc.map((kyc) => (
-                <div key={kyc.id} className="flex items-center justify-between px-6 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {kyc.user_email || `User #${kyc.user}`}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Submitted {kyc.submitted_at ? new Date(kyc.submitted_at).toLocaleDateString() : '—'}
-                    </p>
+          {/* Recent complaints */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5 text-red-500" />New Complaints</h3>
+              <Link href="/admin/complaints" className="text-xs text-slate-600 hover:text-slate-800 font-medium">View all</Link>
+            </div>
+            {loading ? <div className="p-3 space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-8 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />)}</div>
+              : recentComplaints.length === 0 ? <p className="px-4 py-4 text-xs text-gray-400">No new complaints</p>
+              : recentComplaints.map((c: any) => (
+                <div key={c.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{c.subject}</p>
+                    <p className="text-[10px] text-gray-400">{c.category} · {c.submitted_by_name}</p>
                   </div>
-                  <StatusBadge status={kyc.status} />
+                  <StatusBadge status={c.priority} />
                 </div>
-              ))
-            )}
+              ))}
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Quick actions */}
+      <div>
+        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          {[
+            { label: "KYC Review", icon: ShieldCheck, href: "/admin/kyc", bg: "hover:bg-amber-50 dark:hover:bg-amber-900/20", ic: "text-amber-600" },
+            { label: "Products", icon: Package, href: "/admin/products", bg: "hover:bg-blue-50 dark:hover:bg-blue-900/20", ic: "text-blue-600" },
+            { label: "Complaints", icon: MessageSquare, href: "/admin/complaints", bg: "hover:bg-red-50 dark:hover:bg-red-900/20", ic: "text-red-500" },
+            { label: "Withdrawals", icon: DollarSign, href: "/admin/finance/withdrawals", bg: "hover:bg-emerald-50 dark:hover:bg-emerald-900/20", ic: "text-emerald-600" },
+            { label: "Audit Logs", icon: FileText, href: "/admin/audit-logs", bg: "hover:bg-indigo-50 dark:hover:bg-indigo-900/20", ic: "text-indigo-600" },
+            { label: "System Health", icon: Activity, href: "/admin/system", bg: "hover:bg-slate-50 dark:hover:bg-slate-900/20", ic: "text-slate-600" },
+          ].map(({ label, icon: Icon, href, bg, ic }) => (
+            <Link key={label} href={href} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all text-xs font-semibold text-gray-700 dark:text-gray-300", bg)}>
+              <Icon className={cn("w-5 h-5", ic)} />{label}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </AdminPageWrapper>
   );
 }
