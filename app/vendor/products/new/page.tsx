@@ -1,16 +1,25 @@
 "use client";
-import React from 'react';
-import { VendorGuard } from '@/components/layout/VendorGuard';
-import ProductForm from '@/components/vendor/ProductForm';
+import ProductForm from "@/components/vendor/ProductForm";
+import { VendorPageWrapper } from "@/components/vendor/VendorPageWrapper";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function NewProductPage() {
   return (
-    <VendorGuard>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <ProductForm />
-        </div>
-      </div>
-    </VendorGuard>
+    <VendorPageWrapper
+      title="Add New Product"
+      subtitle="Fill in the details below to create a new product listing."
+      actions={
+        <Link
+          href="/vendor/products"
+          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Products
+        </Link>
+      }
+    >
+      <ProductForm />
+    </VendorPageWrapper>
   );
 }
