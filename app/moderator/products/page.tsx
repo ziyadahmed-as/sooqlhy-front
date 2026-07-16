@@ -228,7 +228,8 @@ export default function ModeratorProductsPage() {
     setError(null);
     try {
       const data = await fetchModerationQueue();
-      setProducts(data);
+      const results: Product[] = Array.isArray(data) ? data : (data as any).results ?? [];
+      setProducts(results);
     } catch (e: unknown) {
       setError((e as any)?.message || "Failed to load moderation queue");
       if (!silent) toast.error("Failed to load moderation queue");
