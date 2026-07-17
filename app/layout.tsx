@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} scroll-smooth`}>
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <body className="min-h-full flex flex-col bg-surface text-navy antialiased">
         {children}
         <AuthModal />

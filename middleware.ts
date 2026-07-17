@@ -50,16 +50,17 @@ const ROLE_HOME: Record<string, string> = {
   DRIVER:     '/driver/dashboard',
   MODERATOR:  '/moderator/dashboard',
   ADMIN:      '/admin/dashboard',
-  SUPER_ADMIN:'/admin/dashboard',
+  SUPER_ADMIN:'/super_admin/dashboard',
 };
 
 // Route segment → required JWT role (uppercase)
 const SEGMENT_TO_ROLE: Record<string, string> = {
-  buyer:     'BUYER',
-  vendor:    'VENDOR',
-  driver:    'DRIVER',
-  moderator: 'MODERATOR',
-  admin:     'ADMIN',
+  buyer:       'BUYER',
+  vendor:      'VENDOR',
+  driver:      'DRIVER',
+  moderator:   'MODERATOR',
+  admin:       'ADMIN',
+  super_admin: 'SUPER_ADMIN',
 };
 
 // ─── Middleware ────────────────────────────────────────────────────────────────

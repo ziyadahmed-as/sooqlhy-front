@@ -114,7 +114,7 @@ function LoginForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
     closeAuthModal();
     const map: Record<string, string> = {
       buyer: "/buyer/catalog", vendor: "/vendor/dashboard",
-      driver: "/driver/dashboard", moderator: "/moderator/kyc-review", admin: "/admin/dashboard",
+      driver: "/driver/dashboard", moderator: "/moderator/dashboard", admin: "/admin/dashboard", super_admin: "/super_admin/dashboard",
     };
     const dest = map[user.role?.toLowerCase() ?? ""];
     if (dest) router.push(dest);

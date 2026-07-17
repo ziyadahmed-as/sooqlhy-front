@@ -61,7 +61,7 @@ function Topbar({ searchQuery, onSearchChange, onSearchSubmit, categories, cartC
   const { openAuthModal } = useUIStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
-  const roleHome: Record<string, string> = { buyer: "/buyer/catalog", vendor: "/vendor/dashboard", driver: "/driver/dashboard", moderator: "/moderator/kyc-review", admin: "/admin/dashboard" };
+  const roleHome: Record<string, string> = { buyer: "/buyer/catalog", vendor: "/vendor/dashboard", driver: "/driver/dashboard", moderator: "/moderator/dashboard", admin: "/admin/dashboard", super_admin: "/super_admin/dashboard" };
   const dashHref = user ? (roleHome[user.role?.toLowerCase() ?? ""] ?? "/") : "/";
 
   return (
