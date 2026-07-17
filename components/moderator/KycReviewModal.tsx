@@ -4,11 +4,11 @@ import {
   X, ShieldCheck, FileText, Image as ImageIcon, Download,
   Check, AlertTriangle, Clock, User, Mail, Phone, Building2,
   Truck, Calendar, Maximize2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight,
-  Loader2, MessageSquare, History, Eye,
+  Loader2, MessageSquare, History, Eye, FileQuestion
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import {
-  fetchKycUserRecords, approveKyc, rejectKyc,
+  fetchKycUserRecords, approveKyc, rejectKyc, requestKycDocuments,
   type KycRecord, type KycReviewEntry, type KycApplicant,
 } from "@/lib/api/moderator";
 import { cn } from "@/lib/utils";
@@ -17,15 +17,29 @@ import { toast } from "sonner";
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const REJECTION_REASONS = [
-  "Blurry Document",
-  "Expired ID",
-  "Missing Document",
-  "Incorrect Information",
-  "Mismatched Identity",
-  "Invalid Business License",
-  "Unreadable Text",
-  "Document Tampered",
-  "Other",
+  "National ID Missing",
+  "Passport Missing",
+  "Business License Missing",
+  "Driving License Missing",
+  "Expired Document",
+  "Blurry Image",
+  "Invalid Information",
+  "Address Verification Missing",
+  "Identity Mismatch",
+  "Duplicate Registration",
+  "Invalid Tax Certificate",
+  "Other"
+];
+
+const REQUESTABLE_DOCUMENTS = [
+  "National ID",
+  "Passport",
+  "Driving License",
+  "Selfie",
+  "Business License",
+  "Tax Certificate",
+  "Address Verification",
+  "Other"
 ];
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -192,11 +206,18 @@ export default function KycReviewModal({ record, onClose, onAction }: KycReviewM
 
   // Action state
   const [actionLoading, setActionLoading] = useState(false);
-  const [showReject, setShowReject] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
+  const [activeView, setActiveView] = useState<"default" | "approve" | "reject" | "request">("default");
+
+  // Reject state
+  const [rejectReasons, setRejectReasons] = useState<string[]>([]);
   const [rejectComment, setRejectComment] = useState("");
+
+  // Request docs state
+  const [requestedDocs, setRequestedDocs] = useState<string[]>([]);
+  const [requestComment, setRequestComment] = useState("");
+
+  // Approve state
   const [approveComment, setApproveComment] = useState("");
-  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
 
   const applicant: KycApplicant | null = record.user_details ?? null;
 
@@ -236,6 +257,14 @@ export default function KycReviewModal({ record, onClose, onAction }: KycReviewM
   // Pending records (actionable)
   const pendingRecords = allRecords.filter((r) => r.status === "PENDING" || r.status === "UNDER_REVIEW");
 
+  const toggleReason = (reason: string) => {
+    setRejectReasons((prev) => prev.includes(reason) ? prev.filter((r) => r !== reason) : [...prev, reason]);
+  };
+
+  const toggleDoc = (doc: string) => {
+    setRequestedDocs((prev) => prev.includes(doc) ? prev.filter((d) => d !== doc) : [...prev, doc]);
+  };
+
   const handleApprove = async () => {
     setActionLoading(true);
     try {
@@ -249,16 +278,16 @@ export default function KycReviewModal({ record, onClose, onAction }: KycReviewM
       toast.error("Failed to approve KYC");
     } finally {
       setActionLoading(false);
-      setShowApproveConfirm(false);
     }
   };
 
   const handleReject = async () => {
-    if (!rejectReason.trim()) return;
+    if (rejectReasons.length === 0) return;
     setActionLoading(true);
     try {
+      const reasonStr = rejectReasons.join(", ");
       for (const rec of pendingRecords) {
-        await rejectKyc(rec.id, rejectReason, rejectComment);
+        await rejectKyc(rec.id, reasonStr, rejectComment);
       }
       toast.success(`KYC rejected for ${applicant?.full_name || record.user_email}`);
       onAction();
@@ -267,7 +296,24 @@ export default function KycReviewModal({ record, onClose, onAction }: KycReviewM
       toast.error("Failed to reject KYC");
     } finally {
       setActionLoading(false);
-      setShowReject(false);
+    }
+  };
+
+  const handleRequestDocs = async () => {
+    if (requestedDocs.length === 0) return;
+    setActionLoading(true);
+    try {
+      const docsStr = requestedDocs.join(", ");
+      for (const rec of pendingRecords) {
+        await requestKycDocuments(rec.id, docsStr, requestComment);
+      }
+      toast.success(`Requested documents for ${applicant?.full_name || record.user_email}`);
+      onAction();
+      onClose();
+    } catch {
+      toast.error("Failed to request documents");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -385,8 +431,9 @@ export default function KycReviewModal({ record, onClose, onAction }: KycReviewM
           {/* ── Footer Actions ─────────────────────────────────────── */}
           {pendingRecords.length > 0 && (
             <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-6 py-4">
-              {/* Approve Confirmation */}
-              {showApproveConfirm ? (
+              
+              {/* Approve Form */}
+              {activeView === "approve" && (
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
                     Approve {pendingRecords.length} pending document{pendingRecords.length > 1 ? "s" : ""}?
@@ -395,7 +442,7 @@ export default function KycReviewModal({ record, onClose, onAction }: KycReviewM
                     placeholder="Optional reviewer notes..." rows={2}
                     className="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
                   <div className="flex gap-3">
-                    <button onClick={() => setShowApproveConfirm(false)}
+                    <button onClick={() => setActiveView("default")}
                       className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       Cancel
                     </button>
@@ -406,48 +453,100 @@ export default function KycReviewModal({ record, onClose, onAction }: KycReviewM
                     </button>
                   </div>
                 </div>
-              ) : showReject ? (
-                /* Reject Form */
+              )}
+
+              {/* Reject Form */}
+              {activeView === "reject" && (
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
                     Reject {pendingRecords.length} pending document{pendingRecords.length > 1 ? "s" : ""}
                   </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Select all applicable reasons:</p>
                   <div className="flex flex-wrap gap-2">
-                    {REJECTION_REASONS.map((r) => (
-                      <button key={r} onClick={() => setRejectReason(r)}
-                        className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
-                          rejectReason === r
-                            ? "bg-red-600 text-white border-red-600"
-                            : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-red-300")}>
-                        {r}
-                      </button>
-                    ))}
+                    {REJECTION_REASONS.map((r) => {
+                      const isSelected = rejectReasons.includes(r);
+                      return (
+                        <label key={r} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer transition-colors",
+                          isSelected ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700")}>
+                          <input type="checkbox" className="sr-only" checked={isSelected} onChange={() => toggleReason(r)} />
+                          <div className={cn("flex items-center justify-center w-4 h-4 rounded flex-shrink-0 border", isSelected ? "bg-red-600 border-red-600 text-white" : "border-gray-300 dark:border-gray-600")}>
+                            {isSelected && <Check className="w-3 h-3" />}
+                          </div>
+                          {r}
+                        </label>
+                      );
+                    })}
                   </div>
                   <textarea value={rejectComment} onChange={(e) => setRejectComment(e.target.value)}
                     placeholder="Additional notes (optional)..." rows={2}
                     className="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none" />
                   <div className="flex gap-3">
-                    <button onClick={() => { setShowReject(false); setRejectReason(""); setRejectComment(""); }}
+                    <button onClick={() => { setActiveView("default"); setRejectReasons([]); setRejectComment(""); }}
                       className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       Cancel
                     </button>
-                    <button onClick={handleReject} disabled={actionLoading || !rejectReason.trim()}
+                    <button onClick={handleReject} disabled={actionLoading || rejectReasons.length === 0}
                       className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
                       {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                       Confirm Rejection
                     </button>
                   </div>
                 </div>
-              ) : (
-                /* Default Action Buttons */
-                <div className="flex gap-3">
-                  <button onClick={() => setShowApproveConfirm(true)}
+              )}
+
+              {/* Request Documents Form */}
+              {activeView === "request" && (
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Request Additional Documents
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Select the documents the user needs to upload:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {REQUESTABLE_DOCUMENTS.map((doc) => {
+                      const isSelected = requestedDocs.includes(doc);
+                      return (
+                        <label key={doc} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer transition-colors",
+                          isSelected ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700")}>
+                          <input type="checkbox" className="sr-only" checked={isSelected} onChange={() => toggleDoc(doc)} />
+                          <div className={cn("flex items-center justify-center w-4 h-4 rounded flex-shrink-0 border", isSelected ? "bg-amber-600 border-amber-600 text-white" : "border-gray-300 dark:border-gray-600")}>
+                            {isSelected && <Check className="w-3 h-3" />}
+                          </div>
+                          {doc}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <textarea value={requestComment} onChange={(e) => setRequestComment(e.target.value)}
+                    placeholder="Instructions for the user..." rows={2}
+                    className="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none" />
+                  <div className="flex gap-3">
+                    <button onClick={() => { setActiveView("default"); setRequestedDocs([]); setRequestComment(""); }}
+                      className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={handleRequestDocs} disabled={actionLoading || requestedDocs.length === 0}
+                      className="flex-1 py-2.5 rounded-lg bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                      {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Send Request
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Default Action Buttons */}
+              {activeView === "default" && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button onClick={() => setActiveView("approve")}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors">
                     <Check className="w-4 h-4" /> Approve All
                   </button>
-                  <button onClick={() => setShowReject(true)}
+                  <button onClick={() => setActiveView("reject")}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors">
                     <AlertTriangle className="w-4 h-4" /> Reject
+                  </button>
+                  <button onClick={() => setActiveView("request")}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-amber-600 text-amber-700 dark:text-amber-500 dark:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-sm font-bold transition-colors">
+                    <FileQuestion className="w-4 h-4" /> Request Docs
                   </button>
                 </div>
               )}

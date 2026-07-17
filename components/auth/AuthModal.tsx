@@ -204,19 +204,13 @@ function RegisterForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 max-h-[62vh] overflow-y-auto pr-1" noValidate>
       {/* Role picker */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">I want to join as</p>
-        <div className="grid grid-cols-3 gap-2">
-          {([["BUYER", <User key="u" className="w-4 h-4" />, "Buyer"],
-            ["VENDOR", <Store key="s" className="w-4 h-4" />, "Vendor"],
-            ["DRIVER", <Truck key="t" className="w-4 h-4" />, "Driver"]] as const).map(([val, icon, lbl]) => (
-            <label key={val}
-              className={`flex flex-col items-center gap-1 py-2.5 rounded-lg border-2 cursor-pointer transition-colors text-xs font-semibold ${role === val ? "border-navy bg-navy/5 text-navy" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
-            >
-              <input type="radio" value={val} {...register("role")} className="sr-only" />
-              {icon}{lbl}
-            </label>
-          ))}
-        </div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">I want to join as</label>
+        <select {...register("role")}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy focus:outline-none">
+          <option value="BUYER">Buyer</option>
+          <option value="VENDOR">Vendor</option>
+          <option value="DRIVER">Driver</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

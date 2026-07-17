@@ -236,6 +236,15 @@ export const rejectKyc = async (id: string, reason: string, comment?: string) =>
   await api.post(`/api/kyc/records/${id}/reject/`, { reason, comment: comment ?? '' });
 };
 
+export const requestKycDocuments = async (id: string, reason: string, comment?: string) => {
+  await api.post(`/api/kyc/records/${id}/request-documents/`, { reason, comment: comment ?? '' });
+};
+
+export const bulkKycAction = async (ids: string[], action: 'approve' | 'reject' | 'request_documents', reason?: string, comment?: string) => {
+  const { data } = await api.post('/api/kyc/records/bulk/', { ids, action, reason, comment });
+  return data;
+};
+
 export const fetchKycSummary = async () => {
   const { data } = await api.get('/api/kyc/records/summary/');
   return data;
