@@ -147,14 +147,85 @@ export const bulkApproveProducts = async (productIds: string[]) => {
   return data;
 };
 
-// ─── KYC (re-exported from admin, extended) ───────────────────────────────
+// ─── KYC Types ────────────────────────────────────────────────────────────
+
+export interface KycApplicantVendorProfile {
+  store_name: string;
+  business_name: string;
+  business_type: string;
+  verification_status: string;
+}
+
+export interface KycApplicantDriverProfile {
+  vehicle_type: string;
+  plate_number: string;
+  license_number: string;
+  status: string;
+}
+
+export interface KycApplicant {
+  id: number;
+  email: string;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  phone_number: string | null;
+  is_verified: boolean;
+  is_active: boolean;
+  date_joined: string;
+  vendor_profile: KycApplicantVendorProfile | null;
+  driver_profile: KycApplicantDriverProfile | null;
+}
+
+export interface KycReviewEntry {
+  id: number;
+  kyc_record: string;
+  reviewer: number | null;
+  reviewer_name: string;
+  status: string;
+  admin_comments: string;
+  rejection_reason: string;
+  reviewed_at: string;
+}
+
+export interface KycRecord {
+  id: string;
+  user: number;
+  user_details: KycApplicant;
+  user_email: string;
+  user_role: string;
+  kyc_type: string;
+  document_number: string;
+  document_file: string | null;
+  LIVE_PHOTO: string | null;
+  file_size: number | null;
+  file_type: string | null;
+  status: string;
+  verification_score: number | null;
+  expiry_date: string | null;
+  extracted_data: Record<string, unknown>;
+  submitted_at: string;
+  created_at: string;
+  updated_at: string;
+  rejection_reason: string;
+  reviewed_at: string | null;
+  reviews: KycReviewEntry[];
+}
+
+// ─── KYC API ──────────────────────────────────────────────────────────────
 
 export const fetchKycRecords = async (
   params?: Record<string, string | number>
-): Promise<PaginatedResponse<any>> => {
+): Promise<PaginatedResponse<KycRecord>> => {
   const { data } = await api.get('/api/kyc/records/', { params });
   if (Array.isArray(data)) return { count: data.length, next: null, previous: null, results: data };
   return data;
+};
+
+export const fetchKycUserRecords = async (recordId: string): Promise<KycRecord[]> => {
+  const { data } = await api.get(`/api/kyc/records/${recordId}/user-records/`);
+  return Array.isArray(data) ? data : [];
 };
 
 export const approveKyc = async (id: string, comment?: string) => {
