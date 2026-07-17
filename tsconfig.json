@@ -39,7 +39,8 @@
     "stores/**/*",
     "components/**/*",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "middleware.ts"
   ],
   "exclude": [
     "node_modules"

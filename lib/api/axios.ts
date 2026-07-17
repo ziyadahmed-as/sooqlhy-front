@@ -47,15 +47,22 @@ api.interceptors.response.use(
           { refresh: refreshToken },
           { headers: { 'Content-Type': 'application/json' } }
         );
-        const newAccess = refreshResponse.data.access;
-        // Update store and cookie (middleware reads the cookie for route protection)
-        useAuthStore.getState().setTokens(newAccess, refreshToken);
+        const newAccess: string = refreshResponse.data.access;
+        // ROTATE_REFRESH_TOKENS=True → backend always returns a new refresh token.
+        // If we discard it the next refresh will use the blacklisted old one → 401.
+        const newRefresh: string = refreshResponse.data.refresh ?? refreshToken;
+
+        // Persist both tokens in the store and cookies
+        useAuthStore.getState().setTokens(newAccess, newRefresh);
         Cookies.set('access_token', newAccess, { secure: true, sameSite: 'strict' });
-        // Set new header and retry original request
+        Cookies.set('refreshToken', newRefresh, { secure: true, sameSite: 'strict' });
+
+        // Retry the original request with the fresh access token
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed – clear auth and redirect to login (handled by middleware on next request)
+        // Refresh failed – clear all auth state and cookies so the middleware
+        // redirects the user to login on the next navigation.
         useAuthStore.getState().clearAuth();
         return Promise.reject(refreshError);
       }
