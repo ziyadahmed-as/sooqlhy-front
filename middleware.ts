@@ -107,12 +107,13 @@ const middleware: NextMiddleware = (request: NextRequest) => {
 
     // 4. KYC gate for vendor routes
     //    Vendors must be verified to access anything beyond /auth/kyc
-    if (
-      requiredRole === 'VENDOR' &&
-      payload.is_verified === false &&
-      !pathname.startsWith('/auth/kyc')
-    ) {
-      return redirectTo(request, '/auth/kyc');
+    if (requiredRole === 'VENDOR') {
+      if (payload.is_verified === false && !pathname.startsWith('/auth/kyc')) {
+        return redirectTo(request, '/auth/kyc');
+      }
+      if (payload.is_verified === true && pathname.startsWith('/auth/kyc')) {
+        return redirectTo(request, '/vendor/dashboard');
+      }
     }
 
     // 5. KYC gate for driver routes

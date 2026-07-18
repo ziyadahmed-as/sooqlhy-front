@@ -40,7 +40,8 @@
     "components/**/*",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "middleware.ts"
+    "middleware.ts",
+    "types/**/*"
   ],
   "exclude": [
     "node_modules"

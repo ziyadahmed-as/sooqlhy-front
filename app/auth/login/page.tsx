@@ -22,7 +22,16 @@ export default function LoginPage() {
         moderator: "/moderator/kyc-review",
         admin: "/admin/dashboard",
       };
-      router.replace(roleMap[user.role?.toLowerCase() ?? ""] ?? "/");
+      let dest = roleMap[user.role?.toLowerCase() ?? ""] ?? "/";
+      
+      if (user.role === 'VENDOR') {
+        const status = user.kyc_status || 'NOT_SUBMITTED';
+        if (status !== 'VERIFIED') {
+          dest = "/auth/kyc";
+        }
+      }
+      
+      router.replace(dest);
       return;
     }
     // Navigate to home and open login modal

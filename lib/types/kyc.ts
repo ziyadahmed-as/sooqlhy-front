@@ -13,6 +13,9 @@ export interface KycRequirement {
   description: string;
   /** MIME type or category (e.g. "image/jpeg", "application/pdf", "live_photo") */
   type: string;
+  /** True if this document is mandatory for the user's role */
+  is_required: boolean;
   /** Flag indicating the requirement is a live‑photo that needs dimension validation */
   is_live_photo?: boolean;
 }
+

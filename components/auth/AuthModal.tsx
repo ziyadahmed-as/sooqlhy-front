@@ -116,7 +116,16 @@ function LoginForm({ onSwitch }: { onSwitch: (m: AuthModalMode) => void }) {
       buyer: "/buyer/catalog", vendor: "/vendor/dashboard",
       driver: "/driver/dashboard", moderator: "/moderator/dashboard", admin: "/admin/dashboard", super_admin: "/super_admin/dashboard",
     };
-    const dest = map[user.role?.toLowerCase() ?? ""];
+    
+    let dest = map[user.role?.toLowerCase() ?? ""];
+    
+    if (user.role === 'VENDOR') {
+      const status = user.kyc_status || 'NOT_SUBMITTED';
+      if (status !== 'VERIFIED') {
+        dest = "/auth/kyc";
+      }
+    }
+    
     if (dest) router.push(dest);
   };
 

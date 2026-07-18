@@ -24,10 +24,15 @@ export interface AuthTokens {
 export interface User {
   id: string;
   email: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
   name?: string;
+  phone_number?: string;
   role: UserRole;
   is_verified: boolean;
   is_active?: boolean;
+  kyc_status?: string;
 }
 
 // ─── Pagination ──────────────────────────────────────────────────────────────

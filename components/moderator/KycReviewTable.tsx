@@ -120,7 +120,7 @@ export default function KycReviewTable({ title, roleFilter }: Props) {
         {/* Filters */}
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          {["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "REQUESTED_DOCUMENTS", ""].map((s) => (
+          {["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "REQUEST_DOCS", ""].map((s) => (
             <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
               className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors", statusFilter === s ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300")}>
               {s ? s.replace(/_/g, " ") : "All"}
