@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 // ─── Breadcrumb ──────────────────────────────────────────────────────────────
 
@@ -154,6 +155,7 @@ function ProfileMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const isMounted = useIsMounted();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -163,10 +165,11 @@ function ProfileMenu() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const activeUser = isMounted ? user : null;
   const vendorName =
-    (user as any)?.first_name
-      ? `${(user as any).first_name} ${(user as any).last_name ?? ""}`.trim()
-      : user?.name || user?.email?.split("@")[0] || "Vendor";
+    (activeUser as any)?.first_name
+      ? `${(activeUser as any).first_name} ${(activeUser as any).last_name ?? ""}`.trim()
+      : activeUser?.name || activeUser?.email?.split("@")[0] || "Vendor";
 
   const handleLogout = async () => {
     setOpen(false);

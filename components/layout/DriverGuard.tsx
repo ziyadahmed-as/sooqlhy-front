@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { getDriverKycStatus, type DriverKycStatus } from "@/lib/api/driver";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 // ─── KYC Status Screens ───────────────────────────────────────────────────────
 
@@ -132,9 +133,12 @@ export const DriverGuard: React.FC<{ children: React.ReactNode }> = ({ children 
   const router = useRouter();
   const [guardState, setGuardState] = useState<GuardState>("loading");
   const [rejectionReason, setRejectionReason] = useState<string | undefined>();
+  const isMounted = useIsMounted();
 
   useEffect(() => {
     async function evaluate() {
+      if (!isMounted) return;
+
       if (!user) {
         setGuardState("unauthenticated");
         router.replace("/auth/login");
@@ -180,7 +184,7 @@ export const DriverGuard: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     evaluate();
-  }, [user, router, refreshUser]);
+  }, [user, router, refreshUser, isMounted]);
 
   if (guardState === "loading") return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">

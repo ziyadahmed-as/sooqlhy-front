@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 type GuardState = "loading" | "ok" | "unauthenticated" | "wrong_role" | "suspended";
 
@@ -10,8 +11,11 @@ export const ModeratorGuard: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user } = useAuthStore();
   const router = useRouter();
   const [state, setState] = useState<GuardState>("loading");
+  const isMounted = useIsMounted();
 
   useEffect(() => {
+    if (!isMounted) return;
+
     if (!user) {
       setState("unauthenticated");
       router.replace("/auth/login");
@@ -27,7 +31,7 @@ export const ModeratorGuard: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
     setState("ok");
-  }, [user, router]);
+  }, [user, router, isMounted]);
 
   if (state === "loading") {
     return (

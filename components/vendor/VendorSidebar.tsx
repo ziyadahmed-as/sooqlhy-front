@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import {
   LayoutDashboard, BarChart2, Package, Plus, Layers, Box, Image, Star,
   ShoppingBag, Clock, Zap, Truck, CheckCircle, XCircle, RotateCcw,
@@ -218,6 +219,7 @@ interface VendorSidebarProps {
 export function VendorSidebar({ open, onClose }: VendorSidebarProps) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const isMounted = useIsMounted();
 
   const handleLogout = async () => {
     try {
@@ -229,10 +231,11 @@ export function VendorSidebar({ open, onClose }: VendorSidebarProps) {
     }
   };
 
+  const activeUser = isMounted ? user : null;
   const vendorName =
-    (user as any)?.first_name
-      ? `${(user as any).first_name} ${(user as any).last_name ?? ""}`.trim()
-      : user?.name || user?.email?.split("@")[0] || "Vendor";
+    (activeUser as any)?.first_name
+      ? `${(activeUser as any).first_name} ${(activeUser as any).last_name ?? ""}`.trim()
+      : activeUser?.name || activeUser?.email?.split("@")[0] || "Vendor";
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">

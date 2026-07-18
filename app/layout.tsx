@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
-      <body className="min-h-full flex flex-col bg-surface text-navy antialiased">
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-surface text-navy antialiased" suppressHydrationWarning>
         {children}
         <AuthModal />
         <Toaster position="top-right" richColors closeButton />

@@ -7,6 +7,7 @@ import { useNotificationStore } from "@/stores/notification-store";
 import { Menu, Bell, ChevronDown, LogOut, User, Moon, Sun, ExternalLink, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 function Breadcrumb() {
   const pathname = usePathname();
@@ -73,12 +74,16 @@ function ProfileMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const isMounted = useIsMounted();
+
   useEffect(() => {
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
   }, []);
-  const name = user ? `${(user as any).first_name ?? ""} ${(user as any).last_name ?? ""}`.trim() || user.email?.split("@")[0] : "Admin";
-  const isSuperAdmin = (user?.role ?? "").toUpperCase() === "SUPER_ADMIN";
+
+  const activeUser = isMounted ? user : null;
+  const name = activeUser ? `${(activeUser as any).first_name ?? ""} ${(activeUser as any).last_name ?? ""}`.trim() || activeUser.email?.split("@")[0] : "Admin";
+  const isSuperAdmin = (activeUser?.role ?? "").toUpperCase() === "SUPER_ADMIN";
   const handleLogout = async () => { setOpen(false); try { await logout(); toast.success("Logged out."); router.replace("/"); } catch { toast.error("Failed."); } };
   return (
     <div ref={ref} className="relative">

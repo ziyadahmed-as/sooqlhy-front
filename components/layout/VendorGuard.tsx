@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { fetchMyKycStatus, type VendorKycStatus } from "@/lib/api/vendor";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 // ─── KYC Status Screens ───────────────────────────────────────────────────────
 
@@ -179,8 +180,12 @@ export const VendorGuard: React.FC<VendorGuardProps> = ({ children }) => {
   const [guardState, setGuardState] = useState<GuardState>("loading");
   const [rejectionReason, setRejectionReason] = useState<string | undefined>();
 
+  const isMounted = useIsMounted();
+
   useEffect(() => {
     async function evaluate() {
+      if (!isMounted) return;
+
       // 1. Not logged in at all
       if (!user) {
         setGuardState("unauthenticated");
@@ -235,7 +240,7 @@ export const VendorGuard: React.FC<VendorGuardProps> = ({ children }) => {
     }
 
     evaluate();
-  }, [user, router, refreshUser]);
+  }, [user, router, refreshUser, isMounted]);
 
   // ── Render based on state ──────────────────────────────────────────────────
 

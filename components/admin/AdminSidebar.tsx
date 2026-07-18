@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import {
   LayoutDashboard, Users, Store, Truck, ShieldCheck, Package,
   ShoppingBag, MessageSquare, DollarSign, BarChart2, Bell,
@@ -148,8 +149,10 @@ function SideNavItem({ item }: { item: NavItem }) {
 export function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  const name = user ? `${(user as any).first_name ?? ""} ${(user as any).last_name ?? ""}`.trim() || user.email?.split("@")[0] : "Admin";
-  const isSuperAdmin = (user?.role ?? "").toUpperCase() === "SUPER_ADMIN";
+  const isMounted = useIsMounted();
+  const activeUser = isMounted ? user : null;
+  const name = activeUser ? `${(activeUser as any).first_name ?? ""} ${(activeUser as any).last_name ?? ""}`.trim() || activeUser.email?.split("@")[0] : "Admin";
+  const isSuperAdmin = (activeUser?.role ?? "").toUpperCase() === "SUPER_ADMIN";
 
   const handleLogout = async () => {
     try { await logout(); toast.success("Logged out."); router.replace("/"); }

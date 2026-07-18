@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useDriverStore } from "@/stores/driver-store";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import {
   LayoutDashboard, Truck, Package, Clock, CheckCircle, XCircle,
   MapPin, History, DollarSign, Star, Bell, User, Shield,
@@ -148,10 +149,12 @@ export function DriverSidebar({ open, onClose }: DriverSidebarProps) {
   const { user, logout } = useAuthStore();
   const { profile, toggleOnline } = useDriverStore();
   const router = useRouter();
+  const isMounted = useIsMounted();
 
-  const driverName = user
-    ? `${(user as any).first_name ?? ""} ${(user as any).last_name ?? ""}`.trim() ||
-      user.email?.split("@")[0]
+  const activeUser = isMounted ? user : null;
+  const driverName = activeUser
+    ? `${(activeUser as any).first_name ?? ""} ${(activeUser as any).last_name ?? ""}`.trim() ||
+      activeUser.email?.split("@")[0]
     : "Driver";
 
   const isOnline = profile?.status === "AVAILABLE";

@@ -10,9 +10,11 @@ import { useNotificationStore } from '@/stores/notification-store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ShoppingCart, Bell, LogOut, User, Package } from 'lucide-react';
+import { useIsMounted } from '@/hooks/use-is-mounted';
 
 export const Navbar = () => {
   const router = useRouter();
+  const isMounted = useIsMounted();
   const { user, logout } = useAuthStore();
   const cartItems = useCartStore((state) => state.items);
   const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
@@ -53,8 +55,11 @@ export const Navbar = () => {
     ],
   };
 
-  const role = user?.role?.toLowerCase() ?? '';
+  const activeUser = isMounted ? user : null;
+  const role = activeUser?.role?.toLowerCase() ?? '';
   const navLinks = roleNavLinks[role] ?? [];
+  const activeCartCount = isMounted ? cartCount : 0;
+  const activeUnreadCount = isMounted ? unreadCount : 0;
 
   return (
     <nav className={cn('bg-[#0B1F3A] text-white', 'flex items-center justify-between px-4 py-3 shadow-md')}>
@@ -71,7 +76,7 @@ export const Navbar = () => {
             {item.label}
           </Link>
         ))}
-        {!user && (
+        {!activeUser && (
           <Link href="/buyer/catalog" className="text-sm text-gray-300 hover:text-white transition-colors hidden md:block">
             Catalog
           </Link>
@@ -80,32 +85,32 @@ export const Navbar = () => {
 
       <div className="flex items-center space-x-4">
         {/* Cart */}
-        {(role === 'buyer' || !user) && (
+        {(role === 'buyer' || !activeUser) && (
           <Link href="/buyer/cart" className="relative text-gray-300 hover:text-white transition-colors" aria-label="Shopping cart">
             <ShoppingCart className="h-5 w-5" />
-            {cartCount > 0 && (
+            {activeCartCount > 0 && (
               <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
-                {cartCount > 99 ? '99+' : cartCount}
+                {activeCartCount > 99 ? '99+' : activeCartCount}
               </span>
             )}
           </Link>
         )}
 
         {/* Notifications */}
-        {user && (
+        {activeUser && (
           <button className="relative text-gray-300 hover:text-white transition-colors" aria-label="Notifications">
             <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
+            {activeUnreadCount > 0 && (
               <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
-                {unreadCount > 99 ? '99+' : unreadCount}
+                {activeUnreadCount > 99 ? '99+' : activeUnreadCount}
               </span>
             )}
           </button>
         )}
 
-        {user ? (
+        {activeUser ? (
           <div className="flex items-center space-x-3">
-            <span className="text-sm text-gray-300 hidden sm:block">{user.name || user.email}</span>
+            <span className="text-sm text-gray-300 hidden sm:block">{activeUser.name || activeUser.email}</span>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors"

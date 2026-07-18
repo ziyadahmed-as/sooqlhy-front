@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useModeratorStore } from "@/stores/moderator-store";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import {
   LayoutDashboard, ShieldCheck, Package, Users, Truck,
   MessageSquare, Bell, LogOut, ChevronDown, X, User,
@@ -176,9 +177,11 @@ export function ModeratorSidebar({ open, onClose }: Props) {
   const { user, logout } = useAuthStore();
   const { stats, zones } = useModeratorStore();
   const router = useRouter();
+  const isMounted = useIsMounted();
 
-  const name = user
-    ? `${(user as any).first_name ?? ""} ${(user as any).last_name ?? ""}`.trim() || user.email?.split("@")[0]
+  const activeUser = isMounted ? user : null;
+  const name = activeUser
+    ? `${(activeUser as any).first_name ?? ""} ${(activeUser as any).last_name ?? ""}`.trim() || activeUser.email?.split("@")[0]
     : "Moderator";
 
   const handleLogout = async () => {
